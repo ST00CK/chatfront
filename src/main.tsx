@@ -1,7 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './AppRouter.tsx'
-import './index.css'
+import '../public/css/index.css'
 
 const rootElement = document.getElementById('root');
 if (rootElement) {

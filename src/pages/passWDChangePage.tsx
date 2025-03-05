@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/input';
 import ShortButton from '../components/common/shortButton';
-import StoockImage from '../assets/images/STOOCK!.png';
+import StoockImage from '../assets/STOOCK!.png';
 import { useEmailSendMutation, useEmailCheckMutation, useChangePassWordMutation } from '../query/userQuery';
 
 const PasswdChangePage = () => {

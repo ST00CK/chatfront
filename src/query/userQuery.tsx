@@ -4,7 +4,6 @@ import { useUserStore } from '../store/useUserStore';
 
 const API_URL = `${import.meta.env.VITE_STOOCK_API_URL}/user`;
 
-// Declare Kakao on the window interface
 declare global {
     interface Window {
       Kakao: {

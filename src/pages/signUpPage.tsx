@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Input from '../components/common/input';
 import ShortButton from '../components/common/shortButton';
-import StoockImage from '../assets/images/STOOCK!.png';
+import StoockImage from '../assets/STOOCK!.png';
 import { useSignUpMutation, useEmailSendMutation, useEmailCheckMutation } from '../query/userQuery';
 
 const SignUpPage = () => {

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShortButton from '../components/common/shortButton';
 import Input from '../components/common/input';
-import StoockImage from '../../public/assets/STOOCK!.png';
-import kakaoImage from '../../public/assets/kakao.png';
+import StoockImage from '../assets/STOOCK!.png';
+import kakaoImage from '../assets/kakao.png';
 import { useLoginMutation, useKakaoLoginMutation } from '../query/userQuery';
 
 const LoginPage = () => {
