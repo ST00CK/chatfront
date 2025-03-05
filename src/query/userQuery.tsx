@@ -7,10 +7,14 @@ const API_URL = `${import.meta.env.VITE_STOOCK_API_URL}/user`;
 declare global {
     interface Window {
       Kakao: {
+        init: (key: string) => void;
         Auth: {
           login: (options: { success: (response: KakaoAuthResponse) => void; fail: (error: Error) => void }) => void;
           setAccessToken: (accessToken: string, refreshToken?: string) => void;
+          getAccessToken: () => string | null;
+          logout: (callback: () => void) => void;
         };
+        [key: string]: any;
       };
     }
   }
@@ -195,60 +199,53 @@ export interface KakaoAuthResponse {
 }
 
 //카카오 로그인 mutation
-export const useKakaoLoginMutation = (): UseMutationResult<{ message: string },  unknown,  void, unknown> => {
-  const { setUser } = useUserStore();
-
-  return useMutation({
-    mutationFn: async (): Promise<{ message: string; file: string; name: string; userId: string; email: string }> => {
-      // Kakao 로그인 API 호출: Promise를 통해 Kakao 로그인 결과를 받음
-      const authObj = await new Promise<KakaoAuthResponse>((resolve, reject) => {
-        window.Kakao.Auth.login({
-          success: resolve,
-          fail: reject,
+export const useKakaoLoginMutation = (): UseMutationResult<{ message: string }, unknown, void, unknown> => {
+    const { setUser } = useUserStore();
+  
+    return useMutation({
+      mutationFn: async (): Promise<{ message: string; file: string; name: string; userId: string; email: string }> => {
+        const authObj = await new Promise<KakaoAuthResponse>((resolve, reject) => {
+          window.Kakao.Auth.login({
+            success: resolve,
+            fail: reject,
+          });
         });
-      });
-
-      const accessToken = authObj.access_token;
-      const refreshToken = authObj.refresh_token;
-
-      if (!accessToken) {
-        throw new Error("No access token received from Kakao");
-      }
-
-      console.log("accessToken:", accessToken);
-      console.log("refreshToken:", refreshToken);
-
-      // 로그인 후 액세스 토큰과 리프레시 토큰을 Kakao SDK 및 쿠키에 설정
-      window.Kakao.Auth.setAccessToken(accessToken, refreshToken);
-      document.cookie = `refresh_token=${refreshToken}; path=/; SameSite=Strict`;
-      console.log("설정된 쿠키:", document.cookie);
-
-      // 액세스 토큰을 헤더에 포함시켜 서버에 카카오 토큰을 전송
-      const response = await axios.post(
-        `${API_URL}/api/kakao-token`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-          withCredentials: true,
+  
+        const accessToken = authObj.access_token;
+        const refreshToken = authObj.refresh_token;
+  
+        if (!accessToken) {
+          throw new Error("No access token received from Kakao");
         }
-      );
-      console.log("서버 응답:", response.data);
-
-      // 서버 응답 데이터를 반환
-      return response.data;
-    },
-    onSuccess: (data) => {
-      // 로그인 성공 시, 반환된 메시지를 alert로 출력
-      alert(data.message);
-
-      // 필요한 속성만 추출하여 user store 업데이트
-      const { file, name, userId, email } = data;
-      setUser({ file, name, userId, email });
-    },
-  });
-}
+  
+        console.log("accessToken:", accessToken);
+        console.log("refreshToken:", refreshToken);
+  
+        window.Kakao.Auth.setAccessToken(accessToken, refreshToken);
+        document.cookie = `refresh_token=${refreshToken}; path=/; SameSite=Strict`;
+        console.log("설정된 쿠키:", document.cookie);
+  
+        const response = await axios.post(
+          `${API_URL}/api/kakao-token`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+            withCredentials: true,
+          }
+        );
+        console.log("서버 응답:", response.data);
+  
+        return response.data;
+      },
+      onSuccess: (data) => {
+        alert(data.message);
+        const { file, name, userId, email } = data;
+        setUser({ file, name, userId, email });
+      },
+    });
+  };
 
 export interface ChangePasswordData{
     userId: string;

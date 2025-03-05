@@ -126,7 +126,7 @@ const FriendListPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <main className="flex flex-col h-full">
             <div className="flex justify-end items-center p-4">
                 <PlusIcon onShowInput={handleShowFriendInput} />
                 <SearchIcon onPress={handleShowInput} />
@@ -208,7 +208,7 @@ const FriendListPage = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </main>
     );
 };
 

@@ -98,7 +98,7 @@ const ChatListPage = () => {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <main className="flex flex-col h-full">
             <div className="flex flex-col flex-1 p-4">
                 <div className="flex justify-between items-center mb-4">
                     <ChatLogo />
@@ -127,7 +127,7 @@ const ChatListPage = () => {
                 />
             </div>
             <BottomTab currentPage="ChatListPage" />
-        </div>
+        </main>
     );
 };
 

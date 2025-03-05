@@ -165,7 +165,7 @@ const ChatRoomPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-full">
+        <main className="flex flex-col h-full">
             <div className="flex justify-between items-center p-4 border-b border-gray-300">
                 {!showInput ? (
                     <>
@@ -249,7 +249,7 @@ const ChatRoomPage = () => {
                 onRoomNameUpdate={handleRoomNameUpdate}
                 handleExit={handleExit}
             />
-        </div>
+        </main>
     );
 };
 

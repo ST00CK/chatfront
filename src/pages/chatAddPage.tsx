@@ -101,7 +101,7 @@ const ChatAddPage = () => {
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <main className="flex flex-col h-full">
             <div className="flex flex-col flex-1 p-4">
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-lg font-bold">대화상대 선택</h1>
@@ -138,7 +138,7 @@ const ChatAddPage = () => {
                     확인
                 </button>
             </div>
-        </div>
+        </main>
     );
 };
 

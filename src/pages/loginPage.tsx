@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ShortButton from '../components/common/shortButton';
 import Input from '../components/common/input';
@@ -13,6 +13,13 @@ const LoginPage = () => {
 
   const loginMutation = useLoginMutation();
   const kakaoLoginMutation = useKakaoLoginMutation();
+
+  useEffect(() => {
+    if (window.Kakao && !window.Kakao.isInitialized()) {
+      window.Kakao.init(import.meta.env.VITE_STOOCK_KAKAO_API_KEY);
+      console.log("Kakao SDK 초기화 완료:", window.Kakao.isInitialized());
+    }
+  }, []);
 
   const navigateToFriendList = () => {
     navigate('/friendlist');
@@ -44,9 +51,7 @@ const LoginPage = () => {
   // 카카오 로그인 핸들
   const handleKaKaoLogin = async () => {
     try {
-      // Kakao 로그인 mutation 실행
       await kakaoLoginMutation.mutateAsync();
-
       navigateToFriendList();
     } catch (error) {
       console.error("Login failed:", error);
@@ -55,7 +60,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full p-5 bg-white">
+    <main className="flex flex-col items-center justify-center h-full p-5 bg-white">
       <img src={StoockImage} alt="Stoock Logo" className="mb-10" />
       <h1 className="text-2xl mb-8">로그인</h1>
       <Input placeholder="아이디" className="mb-4 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)} value={userId} />
@@ -70,7 +75,7 @@ const LoginPage = () => {
       <button onClick={navigateToPasswdChange} className="mt-5 text-blue-500 underline">
         비밀번호가 기억이 안나요
       </button>
-    </div>
+    </main>
   );
 };
 

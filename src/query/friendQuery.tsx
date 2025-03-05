@@ -51,7 +51,7 @@ export const useFriendShipListMutation = (): UseMutationResult<TransformedUser[]
         })
 
         if(response.data==null){
-            return "친구 없음"
+            return "친구 없음"  
         }
         
         console.log(response.data);

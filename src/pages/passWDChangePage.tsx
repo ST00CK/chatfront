@@ -120,7 +120,7 @@ const PasswdChangePage = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen py-10 bg-gray-100">
+        <main className="flex flex-col items-center justify-center min-h-screen py-10 bg-gray-100">
             <img src={StoockImage} alt="Stoock Logo" className="mb-10" />
             <h1 className="text-2xl font-bold mb-5">비밀번호 변경</h1>
             <div className="w-4/5 mb-5">
@@ -195,7 +195,7 @@ const PasswdChangePage = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </main>
     );
 };
 

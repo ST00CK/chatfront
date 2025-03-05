@@ -88,7 +88,7 @@ const MyPage = () => {
   };
 
   return (
-    <div className="flex flex-col p-5 bg-white h-full">
+    <main className="flex flex-col p-5 bg-white h-full">
       <h1 className="text-2xl font-bold mb-5">내정보</h1>
       {user && (
         <ProfileEdit 
@@ -143,7 +143,7 @@ const MyPage = () => {
       >
         제출
       </button>
-    </div>
+    </main>
   );
 };
 

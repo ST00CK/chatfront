@@ -144,7 +144,7 @@ const SignUpPage = () => {
     };
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen py-10 bg-gray-100">
+        <main className="flex flex-col items-center justify-center min-h-screen py-10 bg-gray-100">
             <img src={StoockImage} alt="Stoock Logo" className="mb-10" />
             <h1 className="text-2xl font-bold mb-5">회원가입</h1>
             <div className="w-4/5 mb-5">
@@ -237,7 +237,7 @@ const SignUpPage = () => {
                     </div>
                 </div>
             )}
-        </div>
+        </main>
     );
 };
 

@@ -2,72 +2,148 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-    font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-    line-height: 1.5;
-    font-weight: 400;
-  
-    color-scheme: light dark;
-    color: rgba(255, 255, 255, 0.87);
-    background-color: #242424;
-  
-    font-synthesis: none;
-    text-rendering: optimizeLegibility;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+/* 전체 너비와 높이를 설정 */
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Flexbox를 사용하여 컨텐츠를 중앙에 배치 */
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+/* 루트 요소도 전체 너비와 높이를 사용 */
+#root {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes slideLeft {
+  0% {
+      transform: translateX(0); /* 시작 위치 */
   }
-  
-  a {
-    font-weight: 500;
-    color: #646cff;
-    text-decoration: inherit;
+  100% {
+      transform: translateX(-850%); /* 왼쪽으로 이동 */
   }
-  a:hover {
-    color: #535bf2;
+}
+
+.auto-slide-left {
+  animation: slideLeft 50s linear infinite; /* 50초 동안 왼쪽으로 이동, 반복 */
+}
+
+/* styles.css */
+@keyframes slideIn {
+  0% {
+      transform: translateX(100%);
+      opacity: 0;
   }
-  
-  body {
-    margin: 0;
-    display: flex;
-    place-items: center;
-    min-width: 320px;
-    min-height: 100vh;
+  100% {
+      transform: translateX(0);
+      opacity: 1;
   }
-  
-  h1 {
-    font-size: 3.2em;
-    line-height: 1.1;
+}
+
+@keyframes slideOut {
+  0% {
+      transform: translateX(0);
+      opacity: 1;
   }
-  
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #1a1a1a;
-    cursor: pointer;
-    transition: border-color 0.25s;
+  100% {
+      transform: translateX(-100%);
+      opacity: 0;
   }
-  button:hover {
-    border-color: #646cff;
-  }
-  button:focus,
-  button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
-  
-  @media (prefers-color-scheme: light) {
-    :root {
-      color: #213547;
-      background-color: #ffffff;
-    }
-    a:hover {
-      color: #747bff;
-    }
-    button {
-      background-color: #f9f9f9;
-    }
-  }
-  
+}
+
+.slide-in {
+  animation: slideIn 0.5s forwards;
+}
+
+.slide-out {
+  animation: slideOut 0.5s forwards;
+}
+
+.tagify {
+  --tag-border-radius: 7px;
+  --tag-pad: 0.5em;
+  --tag-inset-shadow-size: 1em;
+  --tag--min-width: 11ch;
+  --tag--max-width: 20ch;
+  --loader-size: 0.75em;
+  --tag-bg: rgba(216, 240, 242, 1);
+  --tag-hover: #d3e2e2;
+  --tags-border-color: rgba(216, 240, 242, 1);
+  --tags-hover-border-color: rgba(216, 240, 242, 1);
+  --tags-focus-border-color: #85C8EA;
+  --tag-text-color: #000000;
+  --tag-text-color--edit: #000000;
+  --tag-remove-bg: #d88f8f;
+  --tag-remove-btn-bg: none;
+  --tag-remove-btn-bg--hover: #C77777;
+  --tag-invalid-color: #D39494;
+  --tag-invalid-bg: #D39494;
+  --placeholder-color: rgba(0, 0, 0, .4);
+  --placeholder-color-focus: rgba(0, 0, 0, .25);
+  --input-color: #000000;
+  border: none;
+}
+
+.tagify__tag {
+  display: inline-flex; /* 태그를 가로로 나열 */
+  align-items: center; /* 수직 정렬 */
+  padding: var(--tag-pad); /* 패딩 */
+  background-color: var(--tag-bg); /* 배경색 */
+  border-radius: var(--tag-border-radius); /* 모서리 둥글게 */
+  margin: 5px; /* 태그 간 간격 */
+  font-size: 14px; /* 글자 크기 */
+  color: var(--tag-text-color); /* 글자 색상 */
+  border: 1px solid var(--tags-border-color); /* 테두리 색상 */
+  transition: background-color 0.3s; /* 배경색 전환 효과 */
+}
+
+.tagify__tag:hover {
+  background-color: var(--tag-hover); /* 호버 시 배경색 */
+}
+
+.tagify__tag--noAnim {
+  transition: none; /* 애니메이션 비활성화 */
+}
+
+.tagify__tag__removeBtn {
+  margin-left: 8px; /* 삭제 버튼과 태그 간 간격 */
+  cursor: pointer; /* 커서 포인터로 변경 */
+  background-color: var(--tag-remove-btn-bg); /* 삭제 버튼 배경색 */
+}
+
+.tagify__tag__removeBtn:hover {
+  background-color: var(--tag-remove-btn-bg--hover); /* 호버 시 삭제 버튼 색상 */
+}
+
+.tagify__tag-text {
+  white-space: nowrap; /* 텍스트 줄 바꿈 방지 */
+}
+
+.tagify__input {
+  color: var(--input-color); /* 입력 색상 */
+  border: none; /* 테두리 없음 */
+  outline: none; /* 포커스 시 테두리 없음 */
+  padding: var(--tag-pad); /* 패딩 */
+  min-width: var(--tag--min-width); /* 최소 너비 */
+  max-width: var(--tag--max-width); /* 최대 너비 */
+}
+
+.tagify__input::placeholder {
+  color: var(--placeholder-color); /* 플레이스홀더 색상 */
+}
+
+.tagify__input:focus::placeholder {
+  color: var(--placeholder-color-focus); /* 포커스 시 플레이스홀더 색상 */
+}
