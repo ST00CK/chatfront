@@ -8,7 +8,7 @@ interface ProfileEditProps {
   };
   newImage: string;
   isChanged: boolean;
-  handleImageChange: () => void;
+  handleImageChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 const ProfileEdit: React.FC<ProfileEditProps> = ({ user, newImage, isChanged, handleImageChange }) => {
@@ -19,9 +19,16 @@ const ProfileEdit: React.FC<ProfileEditProps> = ({ user, newImage, isChanged, ha
         {user && <p className="text-lg font-bold">{user.name}</p>}
         {user && <p className="text-gray-600">{user.email}</p>}
       </div>
-      <button onClick={handleImageChange} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
+      <button onClick={() => document.getElementById('fileInput')?.click()} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
         사진변경
       </button>
+      <input
+        id="fileInput"
+        type="file"
+        accept="image/*"
+        onChange={handleImageChange}
+        className="hidden"
+      />
     </div>
   );
 };
