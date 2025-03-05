@@ -44,7 +44,7 @@ const ChatAddPage = () => {
             }
         };
         fetchFriendList();
-    }, [user, friendShipListMutation]);
+    }, [user]);
 
     const handleShowInput = () => {
         setShowInput(prevShowInput => !prevShowInput);

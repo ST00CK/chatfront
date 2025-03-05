@@ -19,8 +19,9 @@ export const useFriendShipCreateMutation = (): UseMutationResult<AxiosResponse, 
             )
             return response;
         },
-        onSuccess(){
+        onSuccess(data){
             alert("친구 추가")
+            console.log(data);
         }
     })
 }
@@ -34,8 +35,9 @@ export const useFriendShipDeleteMutation = (): UseMutationResult<AxiosResponse, 
             )
             return response;
         },
-        onSuccess(){
+        onSuccess(data){
             alert("친구 삭제")
+            console.log(data);
         }
     })
 }
@@ -64,8 +66,8 @@ export const useFriendShipListMutation = (): UseMutationResult<TransformedUser[]
         console.log(transformedData);
         return transformedData;
         },
-        onSuccess(){
-    
+        onSuccess(data){
+            console.log(data);
         }
     })
 }

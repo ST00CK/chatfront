@@ -102,7 +102,7 @@ const ChatRoomPage = () => {
 
         fetchChatRoomMembers();
         fetchChatRoomLog();
-    }, [roomId, chatRoomLogMutation, chatRoomMembersMutation]);
+    }, [roomId]);
 
     const handleShowInput = () => {
         setShowInput(prevShowInput => !prevShowInput);

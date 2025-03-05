@@ -61,7 +61,7 @@ const FriendListPage = () => {
             }
         };
         fetchFriendList();
-    }, [user, refreshFlag, friendShipListMutation]);
+    }, [user, refreshFlag]);
 
     const navigateToMyPage = () => {
         navigate('/mypage');

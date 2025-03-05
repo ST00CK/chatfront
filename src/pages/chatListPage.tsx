@@ -65,7 +65,7 @@ const ChatListPage = () => {
         };
 
         fetchChatList();
-    }, [user, refreshFlag, chatRoomListMutation, chatRoomMembersMutation]);
+    }, [user, refreshFlag]);
 
     const handleShowInput = () => {
         setShowInput(prevShowInput => !prevShowInput);
