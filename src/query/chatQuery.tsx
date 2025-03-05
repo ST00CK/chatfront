@@ -19,7 +19,7 @@ function transformRoomData(room: { room_id: string; room_name: string }): Room {
 //채팅방 리스트
 export const useChatRoomListMutation = (): UseMutationResult<Room[], unknown, { userId: string} , unknown> =>{
     return useMutation({
-        mutationFn: async(userId) =>{
+        mutationFn: async({ userId }) =>{
             console.log(userId);
             const response = await axios.get(`${API_URL}/api/chatroom/list`, {
                 params: { userId }

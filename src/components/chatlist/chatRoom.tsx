@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 interface ChatRoomProps {
     name: string;
@@ -6,8 +7,10 @@ interface ChatRoomProps {
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ messages }) => {
+    const navigate = useNavigate();
+
     const handlePress = (name: string, roomId: string, userId: string) => {
-        // navigation.navigate('ChatRoomPage', { name, roomId, userId });
+        navigate(`/chatroom/${roomId}`, { state: { name, userId } });
         console.log(`Navigating to ChatRoomPage with name: ${name}, roomId: ${roomId}, userId: ${userId}`);
     };
 

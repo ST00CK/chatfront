@@ -1,7 +1,10 @@
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faUserCircle } from '@fortawesome/free-solid-svg-icons';
+
 const ChatLogo = () => {
     return (
         <div className="flex items-center">
-            <img src="https://via.placeholder.com/50" alt="Logo" className="w-12 h-12 mr-2" />
+            <FontAwesomeIcon icon={faUserCircle} size="3x" className="mr-2" />
             <span className="text-xl font-bold">STOOCK</span>
         </div>
     );
