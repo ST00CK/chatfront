@@ -1,27 +1,26 @@
-FROM node:22 AS build
+FROM node:22.14-alpine AS builder
+
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install
+COPY package.json ./
 
-COPY ./src ./src
-COPY ./tsconfig.app.json ./tsconfig.app.json
-COPY ./tsconfig.json ./tsconfig.json
-COPY ./vite.config.ts ./vite.config.ts
+RUN npm install
 
 COPY . .
 
 RUN npm run build
 
 FROM nginx:alpine
-USER root
 
-WORKDIR /usr/share/nginx/html
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-COPY --from=build /app/dist .
+COPY --from=builder /app/dist/env-config.js.template /usr/share/nginx/html/config.js.template
 
-RUN mkdir -p /var/cache/nginx \
-    && chmod -R 777 /var/cache/nginx
+COPY docker-entrypoint.sh /
+
+RUN chmod +x /docker-entrypoint.sh
 
 EXPOSE 80
+
+ENTRYPOINT ["/docker-entrypoint.sh"]
 CMD ["nginx", "-g", "daemon off;"]
