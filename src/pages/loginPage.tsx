@@ -64,7 +64,7 @@ const LoginPage = () => {
       <img src={StoockImage} alt="Stoock Logo" className="mb-10" />
       <h1 className="text-2xl mb-8">로그인</h1>
       <Input placeholder="아이디" className="mb-4 w-full" onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUserId(e.target.value)} value={userId} />
-      <Input placeholder="비밀번호" className="mb-4 w-full" onChange={(e) => setPassword(e.target.value)} value={password} />
+      <Input placeholder="비밀번호" type='password' className="mb-4 w-full" onChange={(e) => setPassword(e.target.value)} value={password} />
       <div className="flex justify-between w-full mt-5">
         <ShortButton text='로그인' onClick={handleLogin} className="flex-1 mx-1" />
         <ShortButton text='회원가입' onClick={navigateToSignUp} className="flex-1 mx-1" />

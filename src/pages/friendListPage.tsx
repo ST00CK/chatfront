@@ -132,14 +132,15 @@ const FriendListPage = () => {
                 <SearchIcon onPress={handleShowInput} />
                 <Setting />
             </div>
-            <div className="flex justify-center items-center p-4">
-                <Profile
-                    imageUrl={user ? user.file : 'https://placehold.co/50'}
-                    name={user ? user.name : 'Guest'}
-                    imageSize={60}
-                    textSize={20}
-                    onPress={navigateToMyPage}
-                />
+            <div className="flex items-center p-4">
+                <div className="cursor-pointer" onClick={navigateToMyPage}>
+                    <Profile
+                        imageUrl={user ? user.file : 'https://placehold.co/50'}
+                        name={user ? user.name : 'Guest'}
+                        imageSize={60}
+                        textSize={20}
+                    />
+                </div>
             </div>
             {showInput && (
                 <div className="flex justify-center items-center p-4">

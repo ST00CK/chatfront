@@ -90,20 +90,16 @@ const MyPage = () => {
   return (
     <main className="flex flex-col p-5 bg-white h-full">
       <h1 className="text-2xl font-bold mb-5">내정보</h1>
-      {user && (
-        <ProfileEdit 
-          user={user} 
-          newImage={newImage} 
-          isChanged={isChanged} 
-          handleImageChange={handleImageChange} 
-        />
-      )}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleImageChange}
-        className="mt-5"
-      />
+      <div>
+        {user && (
+          <ProfileEdit
+            user={user} 
+            newImage={newImage} 
+            isChanged={isChanged} 
+            handleImageChange={handleImageChange} 
+          />
+        )}
+      </div>
       <button
         className="mt-5 py-2 px-4 bg-blue-500 text-white rounded"
         onClick={handlePasswordChange}

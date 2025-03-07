@@ -13,15 +13,17 @@ interface ProfileEditProps {
 
 const ProfileEdit: React.FC<ProfileEditProps> = ({ user, newImage, isChanged, handleImageChange }) => {
   return (
-    <div className="flex flex-col items-center p-4">
-      {user && <img src={isChanged ? newImage : user.file} alt="Profile" className="w-24 h-24 rounded-full mb-4" />}
-      <div className="text-center mb-4">
-        {user && <p className="text-lg font-bold">{user.name}</p>}
-        {user && <p className="text-gray-600">{user.email}</p>}
+    <div className="flex items-center pr-4 py-4">
+      {user && <img src={isChanged ? newImage : user.file} alt="Profile" className="w-[50px] h-[50px] rounded-full mr-4" />}
+      <div className='flex justify-between w-full'>
+        <div className="flex flex-col mr-4">
+          {user && <p className="text-base font-bold">{user.name}</p>}
+          {user && <p className="text-gray-600 text-sm">{user.email}</p>}
+        </div>
+        <button onClick={() => document.getElementById('fileInput')?.click()} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
+          사진변경
+        </button>
       </div>
-      <button onClick={() => document.getElementById('fileInput')?.click()} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
-        사진변경
-      </button>
       <input
         id="fileInput"
         type="file"
