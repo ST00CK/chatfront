@@ -4,7 +4,7 @@ import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
 import LoginPage from './pages/loginPage';
 import SignUpPage from './pages/signUpPage';
-import PasswdChangePage from './pages/passwdChangePage';
+import PasswdChangePage from './pages/passWDChangePage';
 import FriendListPage from './pages/friendListPage';
 import ChatRoomPage from './pages/chatRoomPage';
 import ChatListPage from './pages/chatListPage';
