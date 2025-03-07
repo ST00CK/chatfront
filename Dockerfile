@@ -11,10 +11,11 @@ COPY ./vite.config.ts ./vite.config.ts
 
 COPY . .
 
-# 6️⃣ React + Vite 빌드 실행
 RUN npm run build
 
 FROM nginx:alpine
+USER root
+
 WORKDIR /usr/share/nginx/html
 
 COPY --from=build /app/dist .
