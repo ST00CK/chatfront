@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import io, { Socket } from 'socket.io-client';
 import Chat from '../components/chatroom/chat';
 import ChatInput from '../components/chatroom/chatInput';
 import SearchIcon from '../components/common/searchIcon';
@@ -14,13 +15,16 @@ import { useUserStore } from '../store/useUserStore';
 import { fetchUserById, User } from '../query/userQuery';
 
 const ChatRoomPage = () => {
-    const { name, roomId } = useParams();
+    const { roomId } = useParams();
+    const location = useLocation();
     const navigate = useNavigate();
     const { user } = useUserStore();
 
     const chatRoomMembersMutation = useChatRoomMembersMutation();
     const chatRoomLogMutation = useChatRoomLogMutation();
     const [participants, setParticipants] = useState<User[]>([]);
+    const [roomName, setRoomName] = useState(location.state?.name || ''); // location.state에서 name을 가져옴
+
     interface Message {
         id: number;
         profileImage: string;
@@ -30,21 +34,29 @@ const ChatRoomPage = () => {
         isUserMessage: boolean;
         userId: string;
     }
-    
+
     const [messages, setMessages] = useState<Message[]>([]);
     const [filteredMessages, setFilteredMessages] = useState(messages);
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isPanelVisible, setIsPanelVisible] = useState(false);
     const [isSettingVisible, setIsSettingVisible] = useState(false);
-    const [roomName, setRoomName] = useState(name);
     const slideAnim = useRef(0);
     const panelAnim = useRef(0);
     const overlayOpacity = useRef(0);
 
     const deleteRoomMutation = useDeleteRoomMutation();
 
+    // socket 변수를 컴포넌트 범위에서 정의
+    const socket = useRef<Socket | null>(null);
+
     useEffect(() => {
+        socket.current = io(`${import.meta.env.VITE_STOOCK_API_URL}`, {
+            query: { userId: user?.userId },
+            transports: ['websocket'], // websocket만 사용
+            path: '/', // 기본 경로 제거
+        });
+
         const fetchChatRoomMembers = async () => {
             try {
                 if (!roomId) {
@@ -55,10 +67,10 @@ const ChatRoomPage = () => {
                 const userIds = response.userId || [];
                 const users = await Promise.all(userIds.map(async (userId) => {
                     const user = await fetchUserById(userId);
-                    console.log('Fetched user:', user); // 사용자 정보를 콘솔에 출력하여 확인
+                    console.log('Fetched user:', user);
                     return {
                         ...user,
-                        profileImage: user.file, // file 필드를 profileImage로 매핑
+                        profileImage: user.file,
                     };
                 }));
                 setParticipants(users);
@@ -102,7 +114,36 @@ const ChatRoomPage = () => {
 
         fetchChatRoomMembers();
         fetchChatRoomLog();
-    }, [roomId]);
+
+        // Socket.IO 이벤트 설정
+        socket.current.emit('joinRoom', { roomId, userId: user?.userId });
+
+        socket.current.on('newMessage', (response: { messageId: string; roomId: string; userId: string; context: string }) => {
+            console.log('Received response from server:', response); // 서버 응답 확인
+
+            // 서버에서 받은 메시지를 채팅 목록에 추가
+            const newMessage = {
+                id: Number(response.messageId), // 서버에서 생성한 메시지 ID를 숫자로 변환
+                profileImage: '', // 상대방 프로필 이미지 (필요 시 서버에서 제공)
+                name: '상대방', // 상대방 이름 (필요 시 서버에서 제공)
+                message: response.context, // 서버에서 받은 메시지 내용
+                time: new Date().toISOString(), // 현재 시간 (서버에서 제공 가능)
+                isUserMessage: response.userId === user?.userId, // 본인이 보낸 메시지인지 확인
+                userId: response.userId, // 메시지를 보낸 사용자 ID
+            };
+
+            // 본인이 보낸 메시지는 추가하지 않음
+            if (response.userId !== user?.userId) {
+                setMessages((prevMessages) => [...prevMessages, newMessage]);
+                setFilteredMessages((prevMessages) => [...prevMessages, newMessage]);
+            }
+        });
+
+        return () => {
+            socket.current?.off('newMessage');
+            socket.current?.disconnect();
+        };
+    }, [roomId, user?.userId]);
 
     const handleShowInput = () => {
         setShowInput(prevShowInput => !prevShowInput);
@@ -119,15 +160,29 @@ const ChatRoomPage = () => {
     };
 
     const handleSend = (message: string) => {
-        const newMessage = {
-            id: messages.length + 1,
-            profileImage: '',
-            name: 'You',
-            message: message,
-            time: new Date().toISOString(),
-            isUserMessage: true,
-            userId: user?.userId || '',
+        // 서버로 전송할 데이터
+        const payload = {
+            roomId, // 현재 채팅방 ID
+            userId: user?.userId, // 현재 사용자 ID
+            context: message, // 사용자가 입력한 메시지
         };
+
+        console.log('Sending payload to server:', payload); // 서버로 전송할 데이터 확인
+
+        // 서버로 메시지 전송
+        socket.current?.emit('sendMessage', payload);
+
+        // 클라이언트에서 메시지를 바로 추가 (서버 응답 기다리지 않음)
+        const newMessage = {
+            id: messages.length + 1, // 임시 ID (숫자)
+            profileImage: user?.file || '', // 사용자 프로필 이미지
+            name: user?.name || '', // 사용자 이름
+            message: message, // 사용자가 입력한 메시지
+            time: new Date().toISOString(), // 현재 시간
+            isUserMessage: true, // 본인이 보낸 메시지
+            userId: user?.userId || '', // 사용자 ID
+        };
+
         setMessages([...messages, newMessage]);
         setFilteredMessages([...messages, newMessage]);
     };

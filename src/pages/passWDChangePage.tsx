@@ -127,6 +127,7 @@ const PasswdChangePage = () => {
                 <Input
                     placeholder="이메일"
                     onChange={(e) => setEmail(e.target.value)}
+                    className='w-full'
                     value={email}
                 />
             </div>

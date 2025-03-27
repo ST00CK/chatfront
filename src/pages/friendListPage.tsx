@@ -146,7 +146,7 @@ const FriendListPage = () => {
                 <div className="flex justify-center items-center p-4">
                     <input
                         type="text"
-                        className="w-full border border-gray-300 p-2 rounded"
+                        className="w-full border border-gray-300 p-2 rounded outline-none"
                         value={inputValue}
                         onChange={(e) => handleInputChange(e.target.value)}
                         placeholder="Search"
@@ -154,17 +154,17 @@ const FriendListPage = () => {
                 </div>
             )}
             {showFriendInput && (
-                <div className="flex justify-center items-center p-4 border border-black rounded">
+                <div className="flex justify-center items-center m-4 border border-gray-300 rounded">
                     <input
                         type="text"
-                        className="flex-1 h-10 px-4"
+                        className="flex-1 p-2 outline-none"
                         value={inputFriendIDValue}
                         onChange={(e) => handleInputFriendIdChange(e.target.value)}
                         placeholder="friend ID"
                     />
                     <button
                         onClick={handleFriendCreate}
-                        className={`ml-2 py-2 px-4 rounded ${inputFriendIDValue ? 'bg-white text-black' : 'bg-gray-300 text-gray-500'}`}
+                        className={`mr-2 py-1 px-2 rounded ${inputFriendIDValue ? 'bg-white text-black' : 'bg-gray-300 text-gray-500'}`}
                         disabled={!inputFriendIDValue}
                     >
                         추가

@@ -151,6 +151,7 @@ const SignUpPage = () => {
                 <Input
                     placeholder="이메일"
                     onChange={(e) => setEmail(e.target.value)}
+                    className='w-full'
                     value={email}
                 />
             </div>
@@ -181,6 +182,7 @@ const SignUpPage = () => {
                 <Input
                     placeholder="아이디"
                     onChange={(e) => setID(e.target.value)}
+                    className='w-full'
                     value={ID}
                 />
             </div>
@@ -188,6 +190,7 @@ const SignUpPage = () => {
                 <Input
                     placeholder="이름"
                     onChange={(e) => setName(e.target.value)}
+                    className='w-full'
                     value={name}
                 />
             </div>
@@ -197,6 +200,7 @@ const SignUpPage = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     value={password}
                     type="password"
+                    className='w-full'
                     onBlur={handlePasswordBlur}
                 />
                 {passwordError && <p className="text-red-500 text-sm">{passwordError}</p>}
@@ -207,6 +211,7 @@ const SignUpPage = () => {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     value={confirmPassword}
                     type="password"
+                    className='w-full'
                     onBlur={handleConfirmPasswordBlur}
                 />
                 {confirmPasswordError && <p className="text-red-500 text-sm">{confirmPasswordError}</p>}
