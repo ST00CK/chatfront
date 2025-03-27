@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getSocket } from '../../utils/socket';
 
 interface ChatRoomProps {
     name: string;
@@ -10,8 +11,10 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ messages }) => {
     const navigate = useNavigate();
 
     const handlePress = (name: string, roomId: string, userId: string) => {
+        const socket = getSocket();
+        socket.emit('joinRoom', { roomId });
+
         navigate(`/chatroom/${roomId}`, { state: { name, userId } });
-        console.log(`Navigating to ChatRoomPage with name: ${name}, roomId: ${roomId}, userId: ${userId}`);
     };
 
     return (

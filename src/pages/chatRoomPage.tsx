@@ -1,117 +1,208 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useState, useRef } from 'react';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { getSocket, initializeSocket } from '../utils/socket';
+import { useUserStore } from '../store/useUserStore';
+import { useChatRoomMembersMutation, useChatRoomLogMutation, useDeleteRoomMutation } from '../query/chatQuery';
 import Chat from '../components/chatroom/chat';
 import ChatInput from '../components/chatroom/chatInput';
 import SearchIcon from '../components/common/searchIcon';
 import ListIcon from '../components/chatroom/list';
-import Profile from '../components/common/profile';
 import ExitIcon from '../components/chatroom/exitIcon';
 import ChatSetting from '../components/chatroom/chatSetting';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCog } from '@fortawesome/free-solid-svg-icons';
-import { useDeleteRoomMutation, useChatRoomLogMutation, useChatRoomMembersMutation } from '../query/chatQuery';
-import { useUserStore } from '../store/useUserStore';
 import { fetchUserById, User } from '../query/userQuery';
+import SettingsIcon from '@mui/icons-material/Settings';
+
+interface Message {
+    id: number;
+    profileImage: string | null;
+    name: string;
+    message: string;
+    time: string;
+    isUserMessage: boolean;
+    userId: string;
+}
 
 const ChatRoomPage = () => {
-    const { name, roomId } = useParams();
+    const { roomId } = useParams();
+    const location = useLocation();
     const navigate = useNavigate();
     const { user } = useUserStore();
 
     const chatRoomMembersMutation = useChatRoomMembersMutation();
     const chatRoomLogMutation = useChatRoomLogMutation();
+    const deleteRoomMutation = useDeleteRoomMutation();
+
     const [participants, setParticipants] = useState<User[]>([]);
-    interface Message {
-        id: number;
-        profileImage: string;
-        name: string;
-        message: string;
-        time: string;
-        isUserMessage: boolean;
-        userId: string;
-    }
-    
+    const [roomName, setRoomName] = useState(location.state?.name || '');
     const [messages, setMessages] = useState<Message[]>([]);
-    const [filteredMessages, setFilteredMessages] = useState(messages);
+    const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isPanelVisible, setIsPanelVisible] = useState(false);
     const [isSettingVisible, setIsSettingVisible] = useState(false);
-    const [roomName, setRoomName] = useState(name);
-    const slideAnim = useRef(0);
-    const panelAnim = useRef(0);
-    const overlayOpacity = useRef(0);
-
-    const deleteRoomMutation = useDeleteRoomMutation();
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
-        const fetchChatRoomMembers = async () => {
+        const setupSocketAndFetchData = async () => {
             try {
-                if (!roomId) {
-                    throw new Error('Room ID is undefined');
+                let socket;
+                try {
+                    socket = getSocket();
+                } catch {
+                    console.warn('Socket not initialized. Retrying initialization...');
+                    if (user?.userId) {
+                        await initializeSocket(user.userId);
+                        socket = getSocket();
+                    }
                 }
-                const response = await chatRoomMembersMutation.mutateAsync({ roomId });
-                console.log(`Room ID: ${roomId}, Members:`, response.userId);
-                const userIds = response.userId || [];
-                const users = await Promise.all(userIds.map(async (userId) => {
-                    const user = await fetchUserById(userId);
-                    console.log('Fetched user:', user); // 사용자 정보를 콘솔에 출력하여 확인
-                    return {
-                        ...user,
-                        profileImage: user.file, // file 필드를 profileImage로 매핑
+
+                if (socket) {
+                    socket.emit('joinRoom', { roomId, userId: user?.userId });
+                } else {
+                    console.error('Socket is undefined. Unable to join room.');
+                }
+
+                socket?.on('newMessage', async (response: { messageId: string; roomId: string; userId?: string; context: string }) => {
+                    console.log('New message received from server:', response);
+
+                    const isUserMessage = !response.userId || response.userId === user?.userId;
+                    let sender = participants.find((p) => p.userId === response.userId);
+
+                    if (!sender && response.userId) {
+                        try {
+                            const fetchedUser = await fetchUserById(response.userId);
+                            sender = {
+                                userId: fetchedUser.userId,
+                                name: fetchedUser.name,
+                                profileImage: fetchedUser.file,
+                            };
+                        } catch (error) {
+                            console.error('Error fetching user by ID:', error);
+                        }
+                    }
+
+                    const newMessage: Message = {
+                        id: Number(response.messageId) || Date.now(),
+                        profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
+                        name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
+                        message: response.context,
+                        time: new Date().toISOString(),
+                        isUserMessage,
+                        userId: response.userId || user?.userId || '',
                     };
-                }));
-                setParticipants(users);
+
+                    setMessages((prevMessages) => {
+                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                        if (isDuplicate) {
+                            console.log('Duplicate message detected, skipping:', newMessage);
+                            return prevMessages;
+                        }
+
+                        const updatedMessages = [...prevMessages, newMessage];
+                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                        return updatedMessages;
+                    });
+
+                    setFilteredMessages((prevMessages) => {
+                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                        if (isDuplicate) {
+                            return prevMessages;
+                        }
+                        const updatedMessages = [...prevMessages, newMessage];
+                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                        return updatedMessages;
+                    });
+
+                    scrollToBottom();
+                });
+
+                const fetchChatRoomMembers = async () => {
+                    if (!roomId) throw new Error('Room ID is undefined');
+                    const response = await chatRoomMembersMutation.mutateAsync({ roomId });
+                    const userIds = response.userId || [];
+                    const users = await Promise.all(userIds.map(async (userId) => {
+                        const user = await fetchUserById(userId);
+                        return {
+                            ...user,
+                            profileImage: user.file,
+                        };
+                    }));
+                    setParticipants(users);
+                };
+
+                const fetchChatRoomLog = async () => {
+                    if (!roomId) throw new Error('Room ID is undefined');
+                    const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId });
+
+                    const messages: Message[] = Array.isArray(response)
+                        ? await Promise.all(
+                              response.map(async (msg: any) => {
+                                  let sender = participants.find((p) => p.userId === msg.user_id);
+
+                                  if (!sender && msg.user_id) {
+                                      try {
+                                          const fetchedUser = await fetchUserById(msg.user_id);
+                                          sender = {
+                                              userId: fetchedUser.userId,
+                                              name: fetchedUser.name,
+                                              profileImage: fetchedUser.file,
+                                          };
+                                      } catch (error) {
+                                          console.error('Error fetching user by ID:', error);
+                                      }
+                                  }
+
+                                  return {
+                                      id: msg.message_id || Date.now(),
+                                      profileImage: sender?.profileImage || null,
+                                      name: sender?.name || '알 수 없음',
+                                      message: msg.context || '',
+                                      time: msg.send_at || new Date().toISOString(),
+                                      isUserMessage: msg.user_id === user?.userId,
+                                      userId: msg.user_id || '',
+                                  };
+                              })
+                          )
+                        : [];
+
+                    messages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
+                    setMessages(messages);
+                    setFilteredMessages(messages);
+                    scrollToBottom();
+                };
+
+                await fetchChatRoomMembers();
+                await fetchChatRoomLog();
             } catch (error) {
-                console.error('Error fetching chat room members:', error);
+                console.error('Error setting up socket or fetching data:', error);
             }
         };
 
-        const fetchChatRoomLog = async () => {
+        setupSocketAndFetchData();
+
+        return () => {
             try {
-                if (!roomId) {
-                    throw new Error('Room ID is undefined');
-                }
-                const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId });
-                console.log('Chat room log response:', response);
-                interface ChatMessage {
-                    id: number;
-                    profileImage: string;
-                    name: string;
-                    message: string;
-                    time: string;
-                    isUserMessage: boolean;
-                    userId: string;
-                }
-
-                const messages: Message[] = Array.isArray(response) ? response.map((msg: ChatMessage) => ({
-                    id: msg.id,
-                    profileImage: msg.profileImage,
-                    name: msg.name,
-                    message: msg.message,
-                    time: msg.time,
-                    isUserMessage: msg.isUserMessage,
-                    userId: msg.userId,
-                })) : [];
-                setMessages(messages);
-                setFilteredMessages(messages);
+                const socket = getSocket();
+                socket.emit('leaveRoom', { roomId });
+                socket.off('newMessage');
             } catch (error) {
-                console.error('Error fetching chat room log:', error);
+                console.error('Error during socket cleanup:', error);
             }
         };
+    }, [roomId, user?.userId]);
 
-        fetchChatRoomMembers();
-        fetchChatRoomLog();
-    }, [roomId]);
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
 
     const handleShowInput = () => {
-        setShowInput(prevShowInput => !prevShowInput);
-        slideAnim.current = showInput ? 0 : 1;
+        setShowInput((prevShowInput) => !prevShowInput);
     };
 
     const handleInputChange = (text: string) => {
         setInputValue(text);
-        const filtered = messages.filter(msg =>
+        const filtered = messages.filter((msg) =>
             msg.message.toLowerCase().includes(text.toLowerCase()) ||
             msg.name.toLowerCase().includes(text.toLowerCase())
         );
@@ -119,23 +210,23 @@ const ChatRoomPage = () => {
     };
 
     const handleSend = (message: string) => {
-        const newMessage = {
-            id: messages.length + 1,
-            profileImage: '',
-            name: 'You',
-            message: message,
-            time: new Date().toISOString(),
-            isUserMessage: true,
-            userId: user?.userId || '',
-        };
-        setMessages([...messages, newMessage]);
-        setFilteredMessages([...messages, newMessage]);
+        try {
+            const socket = getSocket();
+
+            const payload = {
+                roomId,
+                userId: user?.userId,
+                context: message,
+            };
+
+            socket.emit('sendMessage', payload);
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
     };
 
     const togglePanel = () => {
         setIsPanelVisible(!isPanelVisible);
-        panelAnim.current = isPanelVisible ? 0 : 1;
-        overlayOpacity.current = isPanelVisible ? 0 : 1;
     };
 
     const handleExit = () => {
@@ -147,7 +238,7 @@ const ChatRoomPage = () => {
                 },
             });
         } else {
-            alert("유효하지 않은 사용자 또는 채팅방 ID입니다.");
+            alert('유효하지 않은 사용자 또는 채팅방 ID입니다.');
         }
     };
 
@@ -187,25 +278,21 @@ const ChatRoomPage = () => {
                     </div>
                 )}
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
-                {filteredMessages.map((msg, index) => {
-                    const showProfileImage = index === 0 || filteredMessages[index - 1].userId !== msg.userId;
-                    const showName = index === 0 || filteredMessages[index - 1].userId !== msg.userId;
-                    const showTime = index === filteredMessages.length - 1 || new Date(filteredMessages[index + 1].time).getMinutes() !== new Date(msg.time).getMinutes();
-                    return (
-                        <Chat
-                            key={msg.id}
-                            profileImage={msg.profileImage}
-                            name={msg.name}
-                            message={msg.message}
-                            time={msg.time}
-                            isUserMessage={msg.isUserMessage}
-                            showProfileImage={showProfileImage}
-                            showName={showName}
-                            showTime={showTime}
-                        />
-                    );
-                })}
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+                {filteredMessages.map((msg, index) => (
+                    <Chat
+                        key={msg.id || `message-${index}`}
+                        profileImage={msg.profileImage}
+                        name={msg.name}
+                        message={msg.message}
+                        time={msg.time}
+                        isUserMessage={msg.isUserMessage}
+                        showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                        showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                        showTime={index === filteredMessages.length - 1 || new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()}
+                    />
+                ))}
+                <div ref={messagesEndRef} />
             </div>
             <ChatInput onSend={handleSend} />
             {isPanelVisible && (
@@ -214,24 +301,23 @@ const ChatRoomPage = () => {
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-lg font-bold">Participants</span>
                             <button onClick={togglePanel} className="p-2">
-                                <FontAwesomeIcon icon={faCog} size="lg" color="black" />
+                                <ExitIcon />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             {participants.map((participant, index) => (
-                                <Profile
-                                    key={index}
-                                    name={participant.name}
-                                    imageUrl={participant.profileImage}
-                                    imageSize={40}
-                                    textSize={14}
-                                />
+                                <div key={index} className="flex items-center p-2">
+                                    <img src={participant.profileImage || ''} alt={participant.name} className="w-10 h-10 rounded-full" />
+                                    <span className="ml-2">{participant.name}</span>
+                                </div>
                             ))}
                         </div>
                         <div className="flex justify-between items-center p-4 border-t border-gray-300">
-                            <ExitIcon onPress={handleExit} />
+                            <button onClick={handleExit} className="p-2">
+                                <ExitIcon />
+                            </button>
                             <button onClick={handleSettingPress} className="p-2">
-                                <FontAwesomeIcon icon={faCog} size="lg" color="black" />
+                                <SettingsIcon />
                             </button>
                         </div>
                     </div>
@@ -242,7 +328,7 @@ const ChatRoomPage = () => {
                 onClose={handleSettingClose}
                 roomId={roomId || ''}
                 roomName={roomName || ''}
-                participants={participants.map(participant => ({
+                participants={participants.map((participant) => ({
                     name: participant.name,
                     profileImage: participant.profileImage,
                 }))}

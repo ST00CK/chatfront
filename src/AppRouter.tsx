@@ -10,6 +10,9 @@ import ChatRoomPage from './pages/chatRoomPage';
 import ChatListPage from './pages/chatListPage';
 import ChatAddPage from './pages/chatAddPage';
 import MyPage from './pages/mypage';
+import { useUserStore } from './store/useUserStore';
+import { initializeSocket } from './utils/socket';
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient();
 const persister = createSyncStoragePersister({
@@ -18,6 +21,22 @@ const persister = createSyncStoragePersister({
 });
 
 const AppRouter = () => {
+    const { user } = useUserStore();
+
+    useEffect(() => {
+        const setupSocket = async () => {
+            if (user?.userId) {
+                try {
+                    await initializeSocket(user.userId); // 소켓 연결 완료 대기
+                } catch (error) {
+                    console.error('Failed to initialize socket:', error);
+                }
+            }
+        };
+
+        setupSocket();
+    }, [user?.userId]);
+    
     return (
         <PersistQueryClientProvider client={queryClient} persistOptions={{
             persister,
@@ -30,7 +49,7 @@ const AppRouter = () => {
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/passwdchange" element={<PasswdChangePage />} />
-                    <Route path="/friendlist" element={<FriendListPage />} />
+                    <Route path="/friendlist" element={<FriendListPage />} /> 
                     <Route path="/chatroom/:roomId" element={<ChatRoomPage />} />
                     <Route path="/chatlist" element={<ChatListPage />} />
                     <Route path="/chataddpage" element={<ChatAddPage />} />

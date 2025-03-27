@@ -1,16 +1,19 @@
 import React from 'react';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 interface ExitIconProps {
-    onPress: () => void;
+    className?: string;
 }
 
-const ExitIcon: React.FC<ExitIconProps> = ({ onPress }) => {
+const ExitIcon: React.FC<ExitIconProps> = ({ className }) => {
     return (
-        <button className="flex justify-center items-center p-2" onClick={onPress}>
-            <svg className="w-6 h-6 text-red-500" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10 9V5a1 1 0 011-1h8a1 1 0 011 1v14a1 1 0 01-1 1h-8a1 1 0 01-1-1v-4H5v4a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h1a1 1 0 011 1v4h5z" />
-            </svg>
-        </button>
+        <svg
+            className={`w-6 h-6 text-red-500 ${className}`}
+            fill="currentColor"
+            viewBox="0 0 24 24"
+        >
+            <LogoutIcon/>
+        </svg>
     );
 };
 

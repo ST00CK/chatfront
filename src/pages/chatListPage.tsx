@@ -45,7 +45,7 @@ const ChatListPage = () => {
                     const roomName = roomMembers.join(',');
 
                     return {
-                        id: Number(room.id),
+                        id: room.id,
                         name: roomName,
                         message: '',
                         time: '',
