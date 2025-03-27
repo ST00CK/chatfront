@@ -10,6 +10,7 @@ import ListIcon from '../components/chatroom/list';
 import ExitIcon from '../components/chatroom/exitIcon';
 import ChatSetting from '../components/chatroom/chatSetting';
 import { fetchUserById, User } from '../query/userQuery';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 interface Message {
     id: number;
@@ -39,39 +40,34 @@ const ChatRoomPage = () => {
     const [inputValue, setInputValue] = useState('');
     const [isPanelVisible, setIsPanelVisible] = useState(false);
     const [isSettingVisible, setIsSettingVisible] = useState(false);
-    const slideAnim = useRef(0);
-    const panelAnim = useRef(0);
-    const overlayOpacity = useRef(0);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const setupSocketAndFetchData = async () => {
             try {
                 let socket;
                 try {
-                    socket = getSocket(); // 소켓 가져오기
+                    socket = getSocket();
                 } catch {
                     console.warn('Socket not initialized. Retrying initialization...');
                     if (user?.userId) {
-                        await initializeSocket(user.userId); // 소켓 초기화 재시도
-                        socket = getSocket(); // 다시 소켓 가져오기
+                        await initializeSocket(user.userId);
+                        socket = getSocket();
                     }
                 }
 
-                // 방 입장
                 if (socket) {
                     socket.emit('joinRoom', { roomId, userId: user?.userId });
                 } else {
                     console.error('Socket is undefined. Unable to join room.');
                 }
 
-                // 메시지 수신 이벤트
                 socket?.on('newMessage', async (response: { messageId: string; roomId: string; userId?: string; context: string }) => {
-                    console.log('New message received from server:', response); // 수신된 메시지 디버깅
-                
-                    const isUserMessage = !response.userId || response.userId === user?.userId; // userId가 없거나 현재 사용자와 동일한 경우
+                    console.log('New message received from server:', response);
+
+                    const isUserMessage = !response.userId || response.userId === user?.userId;
                     let sender = participants.find((p) => p.userId === response.userId);
-                
-                    // sender가 없으면 fetchUserById를 사용하여 사용자 정보 가져오기
+
                     if (!sender && response.userId) {
                         try {
                             const fetchedUser = await fetchUserById(response.userId);
@@ -80,43 +76,46 @@ const ChatRoomPage = () => {
                                 name: fetchedUser.name,
                                 profileImage: fetchedUser.file,
                             };
-                            setParticipants((prev) => [...prev, sender]); // participants에 추가
                         } catch (error) {
                             console.error('Error fetching user by ID:', error);
                         }
                     }
-                
+
                     const newMessage: Message = {
-                        id: Number(response.messageId) || Date.now(), // 메시지 ID가 없으면 현재 시간을 사용
+                        id: Number(response.messageId) || Date.now(),
                         profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
                         name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
                         message: response.context,
                         time: new Date().toISOString(),
                         isUserMessage,
-                        userId: response.userId || user?.userId || '', // userId가 없으면 현재 사용자 ID 사용
+                        userId: response.userId || user?.userId || '',
                     };
-                
+
                     setMessages((prevMessages) => {
-                        // 중복 메시지 필터링
-                        if (prevMessages.some((msg) => msg.id === newMessage.id)) {
+                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                        if (isDuplicate) {
                             console.log('Duplicate message detected, skipping:', newMessage);
                             return prevMessages;
                         }
-                
+
                         const updatedMessages = [...prevMessages, newMessage];
-                        console.log('Messages after receiving new message:', updatedMessages); // 메시지 상태 디버깅
+                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                         return updatedMessages;
                     });
-                
+
                     setFilteredMessages((prevMessages) => {
-                        if (prevMessages.some((msg) => msg.id === newMessage.id)) {
+                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                        if (isDuplicate) {
                             return prevMessages;
                         }
-                        return [...prevMessages, newMessage];
+                        const updatedMessages = [...prevMessages, newMessage];
+                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                        return updatedMessages;
                     });
+
+                    scrollToBottom();
                 });
 
-                // 채팅방 멤버 가져오기
                 const fetchChatRoomMembers = async () => {
                     if (!roomId) throw new Error('Room ID is undefined');
                     const response = await chatRoomMembersMutation.mutateAsync({ roomId });
@@ -129,22 +128,17 @@ const ChatRoomPage = () => {
                         };
                     }));
                     setParticipants(users);
-                    console.log('Chat Room Participants:', users);
                 };
 
-                // 채팅 로그 가져오기
                 const fetchChatRoomLog = async () => {
                     if (!roomId) throw new Error('Room ID is undefined');
                     const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId });
-                
-                    console.log('Raw Chat Log Response:', response); // 디버깅용 로그
-                
+
                     const messages: Message[] = Array.isArray(response)
                         ? await Promise.all(
                               response.map(async (msg: any) => {
                                   let sender = participants.find((p) => p.userId === msg.user_id);
-                
-                                  // sender가 없으면 fetchUserById를 사용하여 사용자 정보 가져오기
+
                                   if (!sender && msg.user_id) {
                                       try {
                                           const fetchedUser = await fetchUserById(msg.user_id);
@@ -153,29 +147,29 @@ const ChatRoomPage = () => {
                                               name: fetchedUser.name,
                                               profileImage: fetchedUser.file,
                                           };
-                                          setParticipants((prev) => [...prev, sender]); // participants에 추가
                                       } catch (error) {
                                           console.error('Error fetching user by ID:', error);
                                       }
                                   }
-                
+
                                   return {
-                                      id: msg.message_id || Date.now(), // 메시지 ID가 없으면 현재 시간을 사용
-                                      profileImage: sender?.profileImage || null, // 프로필 이미지
-                                      name: sender?.name || '알 수 없음', // 사용자 이름
-                                      message: msg.context || '', // 메시지 내용
-                                      time: msg.send_at || new Date().toISOString(), // 전송 시간
-                                      isUserMessage: msg.user_id === user?.userId, // 현재 사용자가 보낸 메시지 여부
-                                      userId: msg.user_id || '', // 사용자 ID
+                                      id: msg.message_id || Date.now(),
+                                      profileImage: sender?.profileImage || null,
+                                      name: sender?.name || '알 수 없음',
+                                      message: msg.context || '',
+                                      time: msg.send_at || new Date().toISOString(),
+                                      isUserMessage: msg.user_id === user?.userId,
+                                      userId: msg.user_id || '',
                                   };
                               })
                           )
                         : [];
-                
-                    console.log('Processed Chat Messages:', messages); // 디버깅용 로그
-                
+
+                    messages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+
                     setMessages(messages);
                     setFilteredMessages(messages);
+                    scrollToBottom();
                 };
 
                 await fetchChatRoomMembers();
@@ -198,9 +192,12 @@ const ChatRoomPage = () => {
         };
     }, [roomId, user?.userId]);
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+
     const handleShowInput = () => {
         setShowInput((prevShowInput) => !prevShowInput);
-        slideAnim.current = showInput ? 0 : 1;
     };
 
     const handleInputChange = (text: string) => {
@@ -215,15 +212,14 @@ const ChatRoomPage = () => {
     const handleSend = (message: string) => {
         try {
             const socket = getSocket();
-    
+
             const payload = {
                 roomId,
                 userId: user?.userId,
                 context: message,
             };
-    
-            socket.emit('sendMessage', payload); // 메시지 전송
-            console.log('Message sent:', payload); // 전송된 메시지 디버깅
+
+            socket.emit('sendMessage', payload);
         } catch (error) {
             console.error('Error sending message:', error);
         }
@@ -231,8 +227,6 @@ const ChatRoomPage = () => {
 
     const togglePanel = () => {
         setIsPanelVisible(!isPanelVisible);
-        panelAnim.current = isPanelVisible ? 0 : 1;
-        overlayOpacity.current = isPanelVisible ? 0 : 1;
     };
 
     const handleExit = () => {
@@ -243,7 +237,6 @@ const ChatRoomPage = () => {
                     navigate('/chatlist', { state: { refresh: true } });
                 },
             });
-            
         } else {
             alert('유효하지 않은 사용자 또는 채팅방 ID입니다.');
         }
@@ -285,10 +278,10 @@ const ChatRoomPage = () => {
                     </div>
                 )}
             </div>
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
                 {filteredMessages.map((msg, index) => (
                     <Chat
-                        key={msg.id || `message-${index}`} // msg.id가 유효하지 않으면 index 사용
+                        key={msg.id || `message-${index}`}
                         profileImage={msg.profileImage}
                         name={msg.name}
                         message={msg.message}
@@ -299,6 +292,7 @@ const ChatRoomPage = () => {
                         showTime={index === filteredMessages.length - 1 || new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()}
                     />
                 ))}
+                <div ref={messagesEndRef} />
             </div>
             <ChatInput onSend={handleSend} />
             {isPanelVisible && (
@@ -307,7 +301,7 @@ const ChatRoomPage = () => {
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-lg font-bold">Participants</span>
                             <button onClick={togglePanel} className="p-2">
-                                <ExitIcon onPress={togglePanel} />
+                                <ExitIcon />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto">
@@ -319,9 +313,11 @@ const ChatRoomPage = () => {
                             ))}
                         </div>
                         <div className="flex justify-between items-center p-4 border-t border-gray-300">
-                            <ExitIcon onPress={handleExit} />
+                            <button onClick={handleExit} className="p-2">
+                                <ExitIcon />
+                            </button>
                             <button onClick={handleSettingPress} className="p-2">
-                                설정
+                                <SettingsIcon />
                             </button>
                         </div>
                     </div>
