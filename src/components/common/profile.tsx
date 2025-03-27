@@ -13,11 +13,15 @@ interface ProfileProps {
 }
 
 const Profile: React.FC<ProfileProps> = ({ imageUrl, name, imageSize = 50, textSize = 18, style, onPress, showCheck = false, isChecked = false, onCheck }) => {
+    console.log(`Profile rendered: ${name}, isChecked: ${isChecked}`); // 디버깅용 로그
+
     const handlePress = () => {
         if (showCheck && onCheck) {
+            console.log('onCheck called'); // 디버깅용 로그
             onCheck();
         }
         if (onPress) {
+            console.log('onPress called'); // 디버깅용 로그
             onPress();
         }
     };

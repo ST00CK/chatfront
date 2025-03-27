@@ -1,7 +1,7 @@
 import React from 'react';
 
 interface ChatProps {
-    profileImage: string;
+    profileImage: string | null;
     name: string;
     message: string;
     time: string;
@@ -12,13 +12,13 @@ interface ChatProps {
 }
 
 const Chat: React.FC<ChatProps> = ({ profileImage, name, message, time, isUserMessage, showProfileImage, showName, showTime }) => {
-    const formattedTime = new Date(time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const formattedTime = new Date(time).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 
     return (
         <div className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mb-2`}>
             {!isUserMessage && showProfileImage && (
                 <div className="w-10 h-10 flex justify-center items-center">
-                    <img src={profileImage} alt="Profile" className="w-10 h-10 rounded-full" />
+                    <img src={profileImage || '/default-profile.png'} alt="Profile" className="w-10 h-10 rounded-full" />
                 </div>
             )}
             <div className={`max-w-4/5 ${isUserMessage ? 'text-right' : 'text-left'} ml-2`}>

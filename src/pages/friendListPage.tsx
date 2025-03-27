@@ -9,6 +9,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../store/useUserStore';
 import { useFriendShipCreateMutation, useFriendShipDeleteMutation, useFriendShipListMutation } from '../query/friendQuery';
+import { initializeSocket } from '../utils/socket';
 
 interface Profile {
     id: string;
@@ -36,6 +37,12 @@ const FriendListPage = () => {
 
     useEffect(() => {
         console.log('User information:', user);
+
+        // Socket 초기화
+        if (user?.userId) {
+            initializeSocket(user.userId);
+        }
+
         const fetchFriendList = async () => {
             try {
                 const response = await friendShipListMutation.mutateAsync(user!.userId);

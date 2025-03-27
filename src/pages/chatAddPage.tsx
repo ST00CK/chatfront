@@ -31,7 +31,7 @@ const ChatAddPage = () => {
                 console.log('Friend list response:', response); // 응답 데이터 확인
                 if (Array.isArray(response)) {
                     const transformedResponse = response.map((user: { id: string; name: string; imageUrl: string }) => ({
-                        id: parseInt(user.id, 10),
+                        id: user.id,
                         name: user.name,
                         imageUrl: user.imageUrl,
                         isChecked: false,
@@ -60,45 +60,52 @@ const ChatAddPage = () => {
     };
 
     const handleCheck = (id: number) => {
-        const updatedProfiles = profiles.map(profile =>
-            profile.id === id ? { ...profile, isChecked: !profile.isChecked } : profile
-        );
-        setProfiles(updatedProfiles);
-        setFilteredProfiles(updatedProfiles.filter(profile =>
-            profile.name.toLowerCase().includes(inputValue.toLowerCase())
-        ));
+        setProfiles(prevProfiles => {
+            const updatedProfiles = prevProfiles.map(profile =>
+                profile.id === id ? { ...profile, isChecked: !profile.isChecked } : profile
+            );
+    
+            console.log('Updated Profiles:', updatedProfiles); // 디버깅용 로그
+    
+            // 필터링된 프로필도 업데이트된 상태를 기반으로 설정
+            setFilteredProfiles(updatedProfiles.filter(profile =>
+                profile.name.toLowerCase().includes(inputValue.toLowerCase())
+            ));
+    
+            return updatedProfiles; // 업데이트된 profiles 반환
+        });
     };
 
     const handleCreateChatRoom = async () => {
-        const selectedProfiles = profiles.filter(profile => profile.isChecked);
-        const userIds = selectedProfiles.map(profile => profile.id.toString());
-        const userNames = selectedProfiles.map(profile => profile.name);
-
-        // 현재 사용자의 ID와 이름을 추가
-        if (user && user.userId) {
-            userIds.push(user.userId.toString());
-            userNames.push(user.name);
-        }
-
-        const roomName = userNames.join(',');
-
-        console.log('Selected profiles:', selectedProfiles);
-        console.log('User IDs:', userIds);
-        console.log('Room Name:', roomName);
-
-        try {
-            const response = await createChatRoomMutation.mutateAsync({
-                roomName: roomName,
-                userId: userIds
-            });
-            console.log('Chat room creation response:', response);
-            alert(response.message);
-            navigate('/chatlist', { state: { refresh: true } });
-        } catch (error) {
-            console.error('Error creating chat room:', error);
-            alert("채팅방 생성 오류");
-        }
+    const selectedProfiles = profiles.filter(profile => profile.isChecked);
+    console.log('Selected profiles:', selectedProfiles); // 선택된 유저 확인
+    if (selectedProfiles.length === 0) {
+        alert('선택된 유저가 없습니다.');
+        return;
     }
+
+    const userIds = selectedProfiles.map(profile => profile.id.toString());
+    const userNames = selectedProfiles.map(profile => profile.name);
+
+    if (user && user.userId) {
+        userIds.push(user.userId.toString());
+        userNames.push(user.name);
+    }
+
+    const roomName = userNames.join(',');
+
+    try {
+        const response = await createChatRoomMutation.mutateAsync({
+            roomName: roomName,
+            userId: userIds
+        });
+        alert(response.message);
+        navigate('/chatlist', { state: { refresh: true } });
+    } catch (error) {
+        console.error('Error creating chat room:', error);
+        alert("채팅방 생성 오류");
+    }
+};
 
     return (
         <main className="flex flex-col h-full">

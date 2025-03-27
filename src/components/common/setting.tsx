@@ -2,13 +2,23 @@ import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCog, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useNavigate } from 'react-router-dom';
-import { useLogout } from '../../query/userQuery';
+import { useUserStore } from '../../store/useUserStore';
+import { disconnectSocket } from '../../utils/socket';
 
 const Setting: React.FC = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const [modalPosition, setModalPosition] = useState({ top: 0, left: 0 });
     const navigate = useNavigate();
-    const logout = useLogout();
+    const { logout } = useUserStore();
+
+    const handleLogout = () => {
+        // Socket 연결 해제
+        disconnectSocket();
+
+        // 유저 로그아웃
+        logout();
+        navigate('/');
+    };
 
     const navigateToMyPage = () => {
         setModalVisible(false);
@@ -40,7 +50,7 @@ const Setting: React.FC = () => {
                         <button className="w-full py-2 text-center text-black" onClick={navigateToMyPage}>
                             내정보
                         </button>
-                        <button className="w-full py-2 text-center text-black" onClick={logout}>
+                        <button className="w-full py-2 text-center text-black" onClick={handleLogout}>
                             로그아웃
                         </button>
                     </div>

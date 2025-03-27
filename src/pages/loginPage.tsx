@@ -5,11 +5,13 @@ import Input from '../components/common/input';
 import StoockImage from '../assets/STOOCK!.png';
 import kakaoImage from '../assets/kakao.png';
 import { useLoginMutation, useKakaoLoginMutation } from '../query/userQuery';
+import { useUserStore } from '../store/useUserStore';
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState('');
   const [password, setPassword] = useState('');
+  const { setUser } = useUserStore();
 
   const loginMutation = useLoginMutation();
   const kakaoLoginMutation = useKakaoLoginMutation();
@@ -25,33 +27,17 @@ const LoginPage = () => {
     navigate('/friendlist');
   };
 
-  const navigateToSignUp = () => {
-    navigate('/signup');
-  };
-
-  const navigateToPasswdChange = () => {
-    navigate('/passwdchange');
-  };
-
-  // 폼 로그인 핸들
   const handleLogin = async () => {
     try {
-      await loginMutation.mutateAsync({
+      const user = await loginMutation.mutateAsync({
         userId: userId,
         password: password,
       });
 
-      navigateToFriendList();
-    } catch (error) {
-      console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
-    }
-  };
+      // 로그인 성공 시 유저 정보 저장
+      setUser(user);
 
-  // 카카오 로그인 핸들
-  const handleKaKaoLogin = async () => {
-    try {
-      await kakaoLoginMutation.mutateAsync();
+      // FriendListPage로 이동
       navigateToFriendList();
     } catch (error) {
       console.error("Login failed:", error);
@@ -67,12 +53,12 @@ const LoginPage = () => {
       <Input placeholder="비밀번호" type='password' className="mb-4 w-full" onChange={(e) => setPassword(e.target.value)} value={password} />
       <div className="flex justify-between w-full mt-5">
         <ShortButton text='로그인' onClick={handleLogin} className="flex-1 mx-1" />
-        <ShortButton text='회원가입' onClick={navigateToSignUp} className="flex-1 mx-1" />
+        <ShortButton text='회원가입' onClick={() => navigate('/signup')} className="flex-1 mx-1" />
       </div>
-      <button onClick={handleKaKaoLogin} className="mt-5">
+      <button onClick={() => kakaoLoginMutation.mutateAsync()} className="mt-5">
         <img src={kakaoImage} alt="Kakao Login" />
       </button>
-      <button onClick={navigateToPasswdChange} className="mt-5 text-blue-500 underline">
+      <button onClick={() => navigate('/passwdchange')} className="mt-5 text-blue-500 underline">
         비밀번호가 기억이 안나요
       </button>
     </main>
