@@ -174,28 +174,38 @@ export const useChatRoomInviteMutation = () : UseMutationResult<string, unknown,
     })
 }
 
-interface ChatMessageDate {
+interface ChatMessage {
     message_id: string;
     room_id: string;
     user_id: string;
     message: string;
     timestamp: string;
-  }
-  
-
-//채팅방 로그 조회
-export const useChatRoomLogMutation = (): UseMutationResult<ChatMessageDate, unknown, { room_Id: string} , unknown> =>{
-    return useMutation({
-        mutationFn: async({ room_Id }) =>{
-            console.log("room_Id : " + room_Id);
-            const response = await axios.get(`${API_URL}/api/chatroom/log`, {
-                params: { roomId: room_Id },
-            })
-
-            return response.data;
-        },
-        onSuccess(data){
-            console.log(data);
-        }
-    })
 }
+
+interface ChatLogResponse {
+    messages: ChatMessage[];
+    nextCursor: string | null;
+}
+
+interface ChatLogRequest {
+    room_Id: string;
+    cursor?: string;
+    limit: number;
+}
+
+// 채팅방 로그 조회
+export const useChatRoomLogMutation = (): UseMutationResult<ChatLogResponse, unknown, ChatLogRequest, unknown> => {
+    return useMutation({
+        mutationFn: async ({ room_Id, cursor, limit }) => {
+            console.log(`Fetching chat log for roomId: ${room_Id}, cursor: ${cursor}, limit: ${limit}`);
+            const response = await axios.get(`${API_URL}/api/chatroom/log`, {
+                params: { roomId: room_Id, cursor, limit },
+            });
+
+            return response.data; // { messages, nextCursor }
+        },
+        onSuccess(data) {
+            console.log('Fetched chat log:', data);
+        },
+    });
+};
