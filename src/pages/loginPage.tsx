@@ -4,7 +4,7 @@ import ShortButton from '../components/common/shortButton';
 import Input from '../components/common/input';
 import StoockImage from '../assets/STOOCK!.png';
 import kakaoImage from '../assets/kakao.png';
-import { useLoginMutation, useKakaoLoginMutation } from '../query/userQuery';
+import { useLoginMutation, useKakaoLoginMutation, User } from '../query/userQuery';
 import { useUserStore } from '../store/useUserStore';
 
 const LoginPage = () => {
@@ -29,21 +29,39 @@ const LoginPage = () => {
 
   const handleLogin = async () => {
     try {
-      const user = await loginMutation.mutateAsync({
-        userId: userId,
-        password: password,
-      });
+        const response = await loginMutation.mutateAsync({
+            userId: userId,
+            password: password,
+        });
 
-      // 로그인 성공 시 유저 정보 저장
-      setUser(user);
+        if (response.message) {
+            // 로그인 실패 처리
+            alert(response.message);
+            return;
+        }
 
-      // FriendListPage로 이동
-      navigateToFriendList();
+        // 반환된 데이터를 User 타입에 맞게 변환
+        const userData: User = {
+          userId: response.userId || '',
+          email: response.email || '',
+          file: response.file || '',
+          name: response.name || '',
+          id: 0,
+          profileImage: ''
+        };
+
+        setUser(userData);
+        navigateToFriendList();
     } catch (error) {
-      console.error("Login failed:", error);
-      alert("Login failed. Please try again.");
+        console.error("Login failed:", error);
+
+        if (error instanceof Error) {
+            alert(`Login failed: ${error.message}`);
+        } else {
+            alert("Login failed. Please try again.");
+        }
     }
-  };
+};
 
   return (
     <main className="flex flex-col items-center justify-center h-full p-5 bg-white">
