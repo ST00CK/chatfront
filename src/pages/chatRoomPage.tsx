@@ -180,38 +180,38 @@ const ChatRoomPage = () => {
         if (!roomId) throw new Error('Room ID is undefined');
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-
+    
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages(processedMessages);
-            setFilteredMessages(processedMessages);
+            setMessages(processedMessages.reverse()); // 최신 메시지가 아래로 오도록 순서 뒤집기
+            setFilteredMessages(processedMessages.reverse());
             setNextCursor(fetchedNextCursor);
-            scrollToBottom();
+            scrollToBottom(); // 초기 로드 시 맨 아래로 스크롤
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
         }
     };
-
+    
     const fetchOlderMessages = async () => {
         if (!roomId || !nextCursor) return;
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, cursor: nextCursor, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-
+    
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages((prevMessages) => [...processedMessages, ...prevMessages]);
-            setFilteredMessages((prevMessages) => [...processedMessages, ...prevMessages]);
+            setMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]); // 오래된 메시지를 위에 추가
+            setFilteredMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]);
             setNextCursor(fetchedNextCursor);
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
         }
     };
-
+    
     const processMessages = async (fetchedMessages: any[]): Promise<Message[]> => {
         return Promise.all(
             fetchedMessages.map(async (msg) => {
                 let sender = participants.find((p) => p.userId === msg.user_id);
-
+    
                 if (!sender && msg.user_id) {
                     try {
                         const fetchedUser = await fetchUserById(msg.user_id);
@@ -224,7 +224,7 @@ const ChatRoomPage = () => {
                         console.error('Error fetching user by ID:', error);
                     }
                 }
-
+    
                 return {
                     id: msg.message_id || Date.now(),
                     profileImage: sender?.profileImage || null,
@@ -237,7 +237,7 @@ const ChatRoomPage = () => {
             })
         );
     };
-
+    
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
