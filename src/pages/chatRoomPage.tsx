@@ -77,6 +77,9 @@ const ChatRoomPage = () => {
                                 userId: fetchedUser.userId,
                                 name: fetchedUser.name,
                                 profileImage: fetchedUser.file,
+                                id: fetchedUser.id, // 추가
+                                email: fetchedUser.email, // 추가
+                                file: fetchedUser.file, // 추가
                             };
                         } catch (error) {
                             console.error('Error fetching user by ID:', error);
@@ -171,6 +174,9 @@ const ChatRoomPage = () => {
             return {
                 ...user,
                 profileImage: user.file,
+                id: user.id, // 추가
+                email: user.email, // 추가
+                file: user.file, // 추가
             };
         }));
         setParticipants(users);
@@ -219,6 +225,9 @@ const ChatRoomPage = () => {
                             userId: fetchedUser.userId,
                             name: fetchedUser.name,
                             profileImage: fetchedUser.file,
+                            id: fetchedUser.id, // 추가
+                            email: fetchedUser.email, // 추가
+                            file: fetchedUser.file, // 추가
                         };
                     } catch (error) {
                         console.error('Error fetching user by ID:', error);

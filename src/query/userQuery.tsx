@@ -169,7 +169,12 @@ export interface LoginData {
 }
 
 //로그인 mutation
-export const useLoginMutation = (): UseMutationResult<{ message: string }, unknown, LoginData> => {
+export const useLoginMutation = (): UseMutationResult<{
+  userId: string;
+  email: string;
+  file: string;
+  name: string; message: string 
+}, unknown, LoginData> => {
     const { setUser } = useUserStore();
     return useMutation({
         mutationFn: async (data: LoginData) => {
