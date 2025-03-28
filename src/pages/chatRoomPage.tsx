@@ -328,7 +328,7 @@ const ChatRoomPage = () => {
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 flex flex-col"
             >
-                {console.log('Filtered Messages:', filteredMessages)} {/* 디버깅용 로그 */}
+
                 {filteredMessages.map((msg, index) => (
                     <Chat
                         key={msg.id || `message-${index}`}

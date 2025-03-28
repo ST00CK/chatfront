@@ -4,9 +4,8 @@ import ChatLogo from '../components/chatlist/chatLogo';
 import SearchIcon from '../components/common/searchIcon';
 import PlusIcon from '../components/common/plusIcon';
 import BottomTab from '../components/common/bottomTab';
-import ShortButton from '../components/common/shortButton';
 import { useNavigate } from 'react-router-dom';
-import { useChatRoomListMutation, useChatRoomLogMutation, useChatRoomMembersMutation } from '../query/chatQuery';
+import { useChatRoomListMutation, useChatRoomMembersMutation } from '../query/chatQuery';
 import { useUserStore } from '../store/useUserStore';
 
 const ChatListPage = () => {
@@ -16,8 +15,7 @@ const ChatListPage = () => {
     const [inputValue, setInputValue] = useState('');
     const chatRoomListMutation = useChatRoomListMutation();
     const chatRoomMembersMutation = useChatRoomMembersMutation();
-    const chatRoomLogMutation = useChatRoomLogMutation();
-    const [messages, setMessages] = useState<{ id: number; name: string; message: string; time: string; imageUrl: string; roomId: string; userId: string; }[]>([]);
+    const [messages, setMessages] = useState<{ id: string; name: string; message: string; time: string; imageUrl: string; roomId: string; userId: string; }[]>([]);
     const [filteredMessages, setFilteredMessages] = useState(messages);
     const slideAnim = useRef(0);
     const [refreshFlag, setRefreshFlag] = useState(0);
@@ -86,17 +84,6 @@ const ChatListPage = () => {
         setRefreshFlag(prevFlag => prevFlag + 1); // 새로고침 플래그 업데이트
     };
 
-    //채팅방 로그 조회(작동)
-    const handleChatRoomLog = async () => {
-        try {
-            await chatRoomLogMutation.mutateAsync({
-                room_Id: "9458fa1d-e5bd-4fe3-9844-6d348a6c3d85",
-            });
-        } catch {
-            alert("로그 조회 오류")
-        }
-    }
-
     return (
         <main className="flex flex-col h-full">
             <div className="flex flex-col flex-1 p-4">
@@ -121,10 +108,6 @@ const ChatListPage = () => {
                 <div className="flex-1 overflow-y-auto">
                     <ChatRoom name="Chat Room" messages={filteredMessages} />
                 </div>
-                <ShortButton
-                    text="채팅방 로그"
-                    onClick={handleChatRoomLog}
-                />
             </div>
             <BottomTab currentPage="ChatListPage" />
         </main>

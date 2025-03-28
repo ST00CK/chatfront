@@ -4,7 +4,7 @@ import { getSocket } from '../../utils/socket';
 
 interface ChatRoomProps {
     name: string;
-    messages: { id: number; name: string; message: string; time: string; imageUrl: string; roomId: string; userId: string }[];
+    messages: { id: string; name: string; message: string; time: string; imageUrl: string; roomId: string; userId: string }[];
 }
 
 const ChatRoom: React.FC<ChatRoomProps> = ({ messages }) => {
