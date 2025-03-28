@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { getSocket, initializeSocket } from '../utils/socket';
 import { useUserStore } from '../store/useUserStore';
@@ -36,11 +36,13 @@ const ChatRoomPage = () => {
     const [roomName, setRoomName] = useState(location.state?.name || '');
     const [messages, setMessages] = useState<Message[]>([]);
     const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
+    const [nextCursor, setNextCursor] = useState<string | null>(null);
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const [isPanelVisible, setIsPanelVisible] = useState(false);
     const [isSettingVisible, setIsSettingVisible] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const messagesContainerRef = useRef<HTMLDivElement | null>(null);
 
     useEffect(() => {
         const setupSocketAndFetchData = async () => {
@@ -116,64 +118,8 @@ const ChatRoomPage = () => {
                     scrollToBottom();
                 });
 
-                const fetchChatRoomMembers = async () => {
-                    if (!roomId) throw new Error('Room ID is undefined');
-                    const response = await chatRoomMembersMutation.mutateAsync({ roomId });
-                    const userIds = response.userId || [];
-                    const users = await Promise.all(userIds.map(async (userId) => {
-                        const user = await fetchUserById(userId);
-                        return {
-                            ...user,
-                            profileImage: user.file,
-                        };
-                    }));
-                    setParticipants(users);
-                };
-
-                const fetchChatRoomLog = async () => {
-                    if (!roomId) throw new Error('Room ID is undefined');
-                    const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId });
-
-                    const messages: Message[] = Array.isArray(response)
-                        ? await Promise.all(
-                              response.map(async (msg: any) => {
-                                  let sender = participants.find((p) => p.userId === msg.user_id);
-
-                                  if (!sender && msg.user_id) {
-                                      try {
-                                          const fetchedUser = await fetchUserById(msg.user_id);
-                                          sender = {
-                                              userId: fetchedUser.userId,
-                                              name: fetchedUser.name,
-                                              profileImage: fetchedUser.file,
-                                          };
-                                      } catch (error) {
-                                          console.error('Error fetching user by ID:', error);
-                                      }
-                                  }
-
-                                  return {
-                                      id: msg.message_id || Date.now(),
-                                      profileImage: sender?.profileImage || null,
-                                      name: sender?.name || '알 수 없음',
-                                      message: msg.context || '',
-                                      time: msg.send_at || new Date().toISOString(),
-                                      isUserMessage: msg.user_id === user?.userId,
-                                      userId: msg.user_id || '',
-                                  };
-                              })
-                          )
-                        : [];
-
-                    messages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-
-                    setMessages(messages);
-                    setFilteredMessages(messages);
-                    scrollToBottom();
-                };
-
                 await fetchChatRoomMembers();
-                await fetchChatRoomLog();
+                await fetchInitialChatRoomLog();
             } catch (error) {
                 console.error('Error setting up socket or fetching data:', error);
             }
@@ -191,6 +137,106 @@ const ChatRoomPage = () => {
             }
         };
     }, [roomId, user?.userId]);
+
+    const handleScroll = useCallback(() => {
+        if (!messagesContainerRef.current || !nextCursor) return;
+
+        const { scrollTop } = messagesContainerRef.current;
+
+        if (scrollTop === 0) {
+            fetchOlderMessages();
+        }
+    }, [nextCursor]);
+
+    useEffect(() => {
+        const container = messagesContainerRef.current;
+
+        if (container) {
+            container.addEventListener('scroll', handleScroll);
+        }
+
+        return () => {
+            if (container) {
+                container.removeEventListener('scroll', handleScroll);
+            }
+        };
+    }, [handleScroll]);
+
+    const fetchChatRoomMembers = async () => {
+        if (!roomId) throw new Error('Room ID is undefined');
+        const response = await chatRoomMembersMutation.mutateAsync({ roomId });
+        const userIds = response.userId || [];
+        const users = await Promise.all(userIds.map(async (userId) => {
+            const user = await fetchUserById(userId);
+            return {
+                ...user,
+                profileImage: user.file,
+            };
+        }));
+        setParticipants(users);
+    };
+
+    const fetchInitialChatRoomLog = async () => {
+        if (!roomId) throw new Error('Room ID is undefined');
+        const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
+        const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
+
+        if (fetchedMessages && Array.isArray(fetchedMessages)) {
+            const processedMessages = await processMessages(fetchedMessages);
+            setMessages(processedMessages);
+            setFilteredMessages(processedMessages);
+            setNextCursor(fetchedNextCursor);
+            scrollToBottom();
+        } else {
+            console.error('Fetched messages are not in the expected format:', fetchedMessages);
+        }
+    };
+
+    const fetchOlderMessages = async () => {
+        if (!roomId || !nextCursor) return;
+        const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, cursor: nextCursor, limit: 20 });
+        const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
+
+        if (fetchedMessages && Array.isArray(fetchedMessages)) {
+            const processedMessages = await processMessages(fetchedMessages);
+            setMessages((prevMessages) => [...processedMessages, ...prevMessages]);
+            setFilteredMessages((prevMessages) => [...processedMessages, ...prevMessages]);
+            setNextCursor(fetchedNextCursor);
+        } else {
+            console.error('Fetched messages are not in the expected format:', fetchedMessages);
+        }
+    };
+
+    const processMessages = async (fetchedMessages: any[]): Promise<Message[]> => {
+        return Promise.all(
+            fetchedMessages.map(async (msg) => {
+                let sender = participants.find((p) => p.userId === msg.user_id);
+
+                if (!sender && msg.user_id) {
+                    try {
+                        const fetchedUser = await fetchUserById(msg.user_id);
+                        sender = {
+                            userId: fetchedUser.userId,
+                            name: fetchedUser.name,
+                            profileImage: fetchedUser.file,
+                        };
+                    } catch (error) {
+                        console.error('Error fetching user by ID:', error);
+                    }
+                }
+
+                return {
+                    id: msg.message_id || Date.now(),
+                    profileImage: sender?.profileImage || null,
+                    name: sender?.name || '알 수 없음',
+                    message: msg.context || '',
+                    time: msg.timestamp || new Date().toISOString(),
+                    isUserMessage: msg.user_id === user?.userId,
+                    userId: msg.user_id || '',
+                };
+            })
+        );
+    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -278,7 +324,11 @@ const ChatRoomPage = () => {
                     </div>
                 )}
             </div>
-            <div className="flex-1 overflow-y-auto p-4 flex flex-col">
+            <div
+                ref={messagesContainerRef}
+                className="flex-1 overflow-y-auto p-4 flex flex-col"
+            >
+                {console.log('Filtered Messages:', filteredMessages)} {/* 디버깅용 로그 */}
                 {filteredMessages.map((msg, index) => (
                     <Chat
                         key={msg.id || `message-${index}`}
