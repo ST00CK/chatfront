@@ -7,7 +7,7 @@ import { useFriendShipListMutation } from '../query/friendQuery';
 import { useUserStore } from '../store/useUserStore';
 
 interface ProfileType {
-    id: number;
+    id: string;
     name: string;
     imageUrl: string;
     isChecked: boolean;
@@ -59,10 +59,10 @@ const ChatAddPage = () => {
         setFilteredProfiles(filtered);
     };
 
-    const handleCheck = (id: number) => {
+    const handleCheck = (id: string) => {
         setProfiles(prevProfiles => {
             const updatedProfiles = prevProfiles.map(profile =>
-                profile.id === id ? { ...profile, isChecked: !profile.isChecked } : profile
+                profile.id === id.toString() ? { ...profile, isChecked: !profile.isChecked } : profile
             );
     
             console.log('Updated Profiles:', updatedProfiles); // 디버깅용 로그
