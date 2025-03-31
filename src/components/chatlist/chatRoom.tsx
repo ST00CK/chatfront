@@ -13,8 +13,8 @@ const ChatRoom: React.FC<ChatRoomProps> = ({ messages }) => {
     const handlePress = (name: string, roomId: string, userId: string) => {
         const socket = getSocket();
         socket.emit('joinRoom', { roomId });
-
-        navigate(`/chatroom/${roomId}`, { state: { name, userId } });
+    
+        navigate('/chatroom', { state: { roomId, name, userId } });
     };
 
     return (
