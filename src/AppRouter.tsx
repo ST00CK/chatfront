@@ -50,7 +50,7 @@ const AppRouter = () => {
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/passwdchange" element={<PasswdChangePage />} />
                     <Route path="/friendlist" element={<FriendListPage />} /> 
-                    <Route path="/chatroom/:roomId" element={<ChatRoomPage />} />
+                    <Route path="/chatroom" element={<ChatRoomPage />} />
                     <Route path="/chatlist" element={<ChatListPage />} />
                     <Route path="/chataddpage" element={<ChatAddPage />} />
                     <Route path="/mypage" element={<MyPage />} />

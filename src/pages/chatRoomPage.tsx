@@ -23,7 +23,6 @@ interface Message {
 }
 
 const ChatRoomPage = () => {
-    const { roomId } = useParams();
     const location = useLocation();
     const navigate = useNavigate();
     const { user } = useUserStore();
@@ -43,6 +42,15 @@ const ChatRoomPage = () => {
     const [isSettingVisible, setIsSettingVisible] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const messagesContainerRef = useRef<HTMLDivElement | null>(null);
+
+    const roomId = location.state?.roomId;
+
+    useEffect(() => {
+        if (!roomId) {
+            // `roomId`가 없으면 채팅방 목록으로 리다이렉트
+            navigate('/chatlist');
+        }
+    }, [roomId, navigate]);
 
     useEffect(() => {
         const setupSocketAndFetchData = async () => {
