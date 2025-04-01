@@ -5,8 +5,9 @@ import SearchIcon from '../components/common/searchIcon';
 import PlusIcon from '../components/common/plusIcon';
 import BottomTab from '../components/common/bottomTab';
 import { useNavigate } from 'react-router-dom';
-import { useChatRoomListMutation, useChatRoomMembersMutation } from '../query/chatQuery';
+import { useChatRoomListMutation, useChatRoomLogMutation, useChatRoomMembersMutation } from '../query/chatQuery';
 import { useUserStore } from '../store/useUserStore';
+import { ChatMessage, Room } from '../query/chatQuery';
 
 const ChatListPage = () => {
     const navigate = useNavigate();
@@ -14,6 +15,7 @@ const ChatListPage = () => {
     const [showInput, setShowInput] = useState(false);
     const [inputValue, setInputValue] = useState('');
     const chatRoomListMutation = useChatRoomListMutation();
+    const chatRoomLogMutation = useChatRoomLogMutation();
     const chatRoomMembersMutation = useChatRoomMembersMutation();
     const [messages, setMessages] = useState<{ id: string; name: string; message: string; time: string; imageUrl: string; roomId: string; userId: string; }[]>([]);
     const [filteredMessages, setFilteredMessages] = useState(messages);
@@ -33,30 +35,50 @@ const ChatListPage = () => {
 
         const fetchChatList = async () => {
             if (!user?.userId) return;
-
+        
             try {
                 const response = await chatRoomListMutation.mutateAsync({ userId: user.userId });
-                console.log('Chat list response:', response);
-
-                const updatedMessages = response.map((room: { id: string; name: string }) => {
-                    const roomMembers = room.name.split(',').filter((name: string) => name !== user.name);
-                    const roomName = roomMembers.join(',');
-
-                    return {
-                        id: room.id,
-                        name: roomName,
-                        message: '',
-                        time: '',
-                        imageUrl: 'https://placehold.co/50',
-                        roomId: room.id,
-                        userId: user.userId,
-                    };
-                });
-
+                console.log('Chat list response:', response); // 전체 응답 데이터 확인
+        
+                // 각 채팅방의 로그를 조회하여 마지막 메시지를 가져옴
+                const updatedMessages = await Promise.all(
+                    response.map(async (room: Room) => {
+                        console.log('Processing room:', room); // 각 채팅방 데이터 확인
+        
+                        const roomMembers = room.name.split(',').filter((name: string) => name !== user.name);
+                        const roomName = roomMembers.join(',');
+        
+                        // 채팅방 로그 조회
+                        const logResponse = await chatRoomLogMutation.mutateAsync({
+                            room_Id: room.id,
+                            limit: 1, // 가장 최근 메시지 1개만 가져옴
+                        });
+        
+                        // logResponse.messages의 타입을 ChatMessage[]로 지정
+                        const messages: ChatMessage[] = logResponse.messages;
+        
+                        // 필드 이름 매핑
+                        const lastMessage = messages[0]?.context || '대화가 없습니다.';
+                        const lastMessageTime = messages[0]?.send_at || '';
+        
+                        console.log(`Room: ${roomName}, Last Message: ${lastMessage}, Time: ${lastMessageTime}`); // 마지막 메시지와 시간 확인
+        
+                        return {
+                            id: room.id,
+                            name: roomName,
+                            message: lastMessage,
+                            time: lastMessageTime,
+                            imageUrl: 'https://placehold.co/50',
+                            roomId: room.id,
+                            userId: user.userId,
+                        };
+                    })
+                );
+        
                 setMessages(updatedMessages);
                 setFilteredMessages(updatedMessages);
-
-                updatedMessages.forEach((room: { roomId: string }) => fetchChatRoomMembers(room.roomId));
+        
+                updatedMessages.forEach((room) => fetchChatRoomMembers(room.roomId));
             } catch (error) {
                 console.error('Error fetching chat list:', error);
             }

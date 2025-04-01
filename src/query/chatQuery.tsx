@@ -3,10 +3,11 @@ import axios from 'axios';
 
 const API_URL = `${import.meta.env.VITE_STOOCK_API_URL}/chat`;
 
-interface Room {
+export interface Room {
     id: string;
     name: string;
 }
+
 
 //채팅방 리스트 컬럼명? 수정함수
 function transformRoomData(room: { room_id: string; room_name: string }): Room {
@@ -174,12 +175,12 @@ export const useChatRoomInviteMutation = () : UseMutationResult<string, unknown,
     })
 }
 
-interface ChatMessage {
-    message_id: string;
+export interface ChatMessage {
     room_id: string;
+    send_at: string;
+    message_id: string;
+    context: string;
     user_id: string;
-    message: string;
-    timestamp: string;
 }
 
 interface ChatLogResponse {
