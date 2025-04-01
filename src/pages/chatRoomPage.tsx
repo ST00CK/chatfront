@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { getSocket, initializeSocket } from '../utils/socket';
 import { useUserStore } from '../store/useUserStore';
 import { useChatRoomMembersMutation, useChatRoomLogMutation, useDeleteRoomMutation } from '../query/chatQuery';
@@ -11,6 +11,7 @@ import ExitIcon from '../components/chatroom/exitIcon';
 import ChatSetting from '../components/chatroom/chatSetting';
 import { fetchUserById, User } from '../query/userQuery';
 import SettingsIcon from '@mui/icons-material/Settings';
+import React from 'react';
 
 interface Message {
     id: number;
@@ -68,10 +69,14 @@ const ChatRoomPage = () => {
                     socket.emit('joinRoom', { roomId, userId: user?.userId });
                 }
 
-                socket?.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string }) => {
+                socket?.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string; send_at: string }) => {
+                    console.log('Received response:', response); // 디버깅 로그 추가
+                    console.log('Received send_at:', response.send_at); // send_at 값 확인
+                    console.log('Type of send_at:', typeof response.send_at); // send_at의 타입 확인
+                
                     const isUserMessage = !response.user_id || response.user_id === user?.userId;
                     let sender = participants.find((p) => p.userId === response.user_id);
-
+                
                     if (!sender && response.user_id) {
                         try {
                             const fetchedUser = await fetchUserById(response.user_id);
@@ -87,38 +92,39 @@ const ChatRoomPage = () => {
                             console.error('Error fetching user by ID:', error);
                         }
                     }
-
+                
                     const newMessage: Message = {
                         id: Number(response.message_id) || Date.now(),
                         profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
                         name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
                         message: response.context,
-                        time: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }), // 현재 시간 사용
+                        time: response.send_at,
                         isUserMessage,
                         userId: response.user_id || user?.userId || '',
                     };
-
+                
                     setMessages((prevMessages) => {
                         const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
                         if (isDuplicate) {
                             return prevMessages;
                         }
-
+                    
                         const updatedMessages = [...prevMessages, newMessage];
                         updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                         return updatedMessages;
                     });
-
+                    
                     setFilteredMessages((prevMessages) => {
                         const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
                         if (isDuplicate) {
                             return prevMessages;
                         }
+                    
                         const updatedMessages = [...prevMessages, newMessage];
                         updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                         return updatedMessages;
                     });
-
+                
                     scrollToBottom();
                 });
 
@@ -187,12 +193,16 @@ const ChatRoomPage = () => {
         if (!roomId) throw new Error('Room ID is undefined');
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-
+    
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages(processedMessages.reverse());
-            setFilteredMessages(processedMessages.reverse());
+    
+            processedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+    
+            setMessages(processedMessages);
+            setFilteredMessages(processedMessages);
             setNextCursor(fetchedNextCursor);
+    
             scrollToBottom();
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
@@ -201,13 +211,35 @@ const ChatRoomPage = () => {
 
     const fetchOlderMessages = async () => {
         if (!roomId || !nextCursor) return;
+    
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, cursor: nextCursor, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-
+    
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]);
-            setFilteredMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]);
+    
+            setMessages((prevMessages) => {
+                // 기존 메시지와 새 메시지를 합치고 중복 제거
+                const combinedMessages = [...processedMessages, ...prevMessages];
+                const uniqueMessages = combinedMessages.filter(
+                    (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+                );
+    
+                // 시간 순서대로 정렬
+                uniqueMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                return uniqueMessages;
+            });
+    
+            setFilteredMessages((prevMessages) => {
+                const combinedMessages = [...processedMessages, ...prevMessages];
+                const uniqueMessages = combinedMessages.filter(
+                    (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
+                );
+    
+                uniqueMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                return uniqueMessages;
+            });
+    
             setNextCursor(fetchedNextCursor);
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
@@ -218,7 +250,7 @@ const ChatRoomPage = () => {
         return Promise.all(
             fetchedMessages.map(async (msg) => {
                 let sender = participants.find((p) => p.userId === msg.user_id);
-
+    
                 if (!sender && msg.user_id) {
                     try {
                         const fetchedUser = await fetchUserById(msg.user_id);
@@ -234,13 +266,13 @@ const ChatRoomPage = () => {
                         console.error('Error fetching user by ID:', error);
                     }
                 }
-
+    
                 return {
                     id: msg.message_id || Date.now(),
                     profileImage: sender?.profileImage || null,
                     name: sender?.name || '알 수 없음',
                     message: msg.context || '',
-                    time: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }), // 현재 시간 사용
+                    time: msg.send_at,
                     isUserMessage: msg.user_id === user?.userId,
                     userId: msg.user_id || '',
                 };
@@ -338,20 +370,49 @@ const ChatRoomPage = () => {
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 flex flex-col"
             >
+            {filteredMessages.map((msg, index) => {
+                const currentDate = new Date(msg.time).toLocaleDateString('ko-KR', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                });
 
-                {filteredMessages.map((msg, index) => (
-                    <Chat
-                        key={msg.id || `message-${index}`}
-                        profileImage={msg.profileImage}
-                        name={msg.name}
-                        message={msg.message}
-                        time={msg.time}
-                        isUserMessage={msg.isUserMessage}
-                        showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                        showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                        showTime={index === filteredMessages.length - 1 || new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()}
-                    />
-                ))}
+                const previousDate =
+                    index > 0
+                        ? new Date(filteredMessages[index - 1].time).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                        })
+                        : null;
+
+                const isNewDate = currentDate !== previousDate;
+
+                return (
+                    <React.Fragment key={msg.id || `message-${index}`}>
+                        {isNewDate && (
+                            <div className="flex items-center my-4">
+                                <div className="flex-grow border-t border-gray-300"></div>
+                                <span className="mx-4 text-gray-500 text-sm">{currentDate}</span>
+                                <div className="flex-grow border-t border-gray-300"></div>
+                            </div>
+                        )}
+                        <Chat
+                            profileImage={msg.profileImage}
+                            name={msg.name}
+                            message={msg.message}
+                            time={msg.time}
+                            isUserMessage={msg.isUserMessage}
+                            showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                            showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                            showTime={
+                                index === filteredMessages.length - 1 ||
+                                new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()
+                            }
+                        />
+                    </React.Fragment>
+                );
+            })}
                 <div ref={messagesEndRef} />
             </div>
             <ChatInput onSend={handleSend} />
