@@ -23,15 +23,15 @@ export const useUserStore = create<UserStore, [["zustand/persist", UserStore]]>(
         (set, get) => ({
             user: null,
             users: [], // 초기 사용자 목록 설정
-            setUser: (user) => set({ user }),
+            setUser: (user) => set(() => ({ user })), // 상태를 중첩 없이 저장
             setUsers: (users) => set({ users }), // 사용자 목록 설정 메서드 구현
             updateUser: (updatedUser) => set((state) => {
                 const user = state.user ? { ...state.user, ...updatedUser } : null;
                 return { user };
             }),
             logout: () => {
-                set({ user: null });
-                localStorage.removeItem('user-storage');
+                set({ user: null, users: [] }); // 상태 초기화
+                localStorage.removeItem('user-storage'); // 로컬 스토리지에서 상태 제거
             },
             isLoggedIn: () => get().user !== null,
         }),
