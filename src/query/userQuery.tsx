@@ -110,7 +110,7 @@ export const useEmailSendMutation = (): UseMutationResult<{ message: string }, u
 };
 
 //이메일 확인 코드 검증
-export const useEmailCheckMutation = (): UseMutationResult<{ message: string }, unknown, { email: string, authCode: string }> => {
+export const useEmailCheckMutation = (): UseMutationResult<number, unknown, { email: string, authCode: string }> => {
     return useMutation({
         mutationFn: async ({ email, authCode }: { email: string, authCode: string }) => {
             console.log("Verifying email and authCode:", email, authCode); // email과 authCode 값 확인
@@ -124,7 +124,7 @@ export const useEmailCheckMutation = (): UseMutationResult<{ message: string }, 
                 withCredentials: true
             });
             console.log("Response:",response.data);
-            return response.data;
+            return response.status;
         }
     });
 };
