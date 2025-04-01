@@ -12,6 +12,8 @@ import ChatSetting from '../components/chatroom/chatSetting';
 import { fetchUserById, User } from '../query/userQuery';
 import SettingsIcon from '@mui/icons-material/Settings';
 import React from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faXmark } from '@fortawesome/free-solid-svg-icons';
 
 interface Message {
     id: number;
@@ -70,13 +72,9 @@ const ChatRoomPage = () => {
                 }
 
                 socket?.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string; send_at: string }) => {
-                    console.log('Received response:', response); // 디버깅 로그 추가
-                    console.log('Received send_at:', response.send_at); // send_at 값 확인
-                    console.log('Type of send_at:', typeof response.send_at); // send_at의 타입 확인
-                
                     const isUserMessage = !response.user_id || response.user_id === user?.userId;
                     let sender = participants.find((p) => p.userId === response.user_id);
-                
+
                     if (!sender && response.user_id) {
                         try {
                             const fetchedUser = await fetchUserById(response.user_id);
@@ -92,7 +90,7 @@ const ChatRoomPage = () => {
                             console.error('Error fetching user by ID:', error);
                         }
                     }
-                
+
                     const newMessage: Message = {
                         id: Number(response.message_id) || Date.now(),
                         profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
@@ -102,29 +100,29 @@ const ChatRoomPage = () => {
                         isUserMessage,
                         userId: response.user_id || user?.userId || '',
                     };
-                
+
                     setMessages((prevMessages) => {
                         const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
                         if (isDuplicate) {
                             return prevMessages;
                         }
-                    
+
                         const updatedMessages = [...prevMessages, newMessage];
                         updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                         return updatedMessages;
                     });
-                    
+
                     setFilteredMessages((prevMessages) => {
                         const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
                         if (isDuplicate) {
                             return prevMessages;
                         }
-                    
+
                         const updatedMessages = [...prevMessages, newMessage];
                         updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                         return updatedMessages;
                     });
-                
+
                     scrollToBottom();
                 });
 
@@ -193,16 +191,16 @@ const ChatRoomPage = () => {
         if (!roomId) throw new Error('Room ID is undefined');
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-    
+
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-    
+
             processedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-    
+
             setMessages(processedMessages);
             setFilteredMessages(processedMessages);
             setNextCursor(fetchedNextCursor);
-    
+
             scrollToBottom();
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
@@ -211,35 +209,33 @@ const ChatRoomPage = () => {
 
     const fetchOlderMessages = async () => {
         if (!roomId || !nextCursor) return;
-    
+
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, cursor: nextCursor, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-    
+
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-    
+
             setMessages((prevMessages) => {
-                // 기존 메시지와 새 메시지를 합치고 중복 제거
                 const combinedMessages = [...processedMessages, ...prevMessages];
                 const uniqueMessages = combinedMessages.filter(
                     (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
                 );
-    
-                // 시간 순서대로 정렬
+
                 uniqueMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                 return uniqueMessages;
             });
-    
+
             setFilteredMessages((prevMessages) => {
                 const combinedMessages = [...processedMessages, ...prevMessages];
                 const uniqueMessages = combinedMessages.filter(
                     (msg, index, self) => index === self.findIndex((m) => m.id === msg.id)
                 );
-    
+
                 uniqueMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
                 return uniqueMessages;
             });
-    
+
             setNextCursor(fetchedNextCursor);
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
@@ -250,7 +246,7 @@ const ChatRoomPage = () => {
         return Promise.all(
             fetchedMessages.map(async (msg) => {
                 let sender = participants.find((p) => p.userId === msg.user_id);
-    
+
                 if (!sender && msg.user_id) {
                     try {
                         const fetchedUser = await fetchUserById(msg.user_id);
@@ -266,7 +262,7 @@ const ChatRoomPage = () => {
                         console.error('Error fetching user by ID:', error);
                     }
                 }
-    
+
                 return {
                     id: msg.message_id || Date.now(),
                     profileImage: sender?.profileImage || null,
@@ -313,10 +309,6 @@ const ChatRoomPage = () => {
         }
     };
 
-    const togglePanel = () => {
-        setIsPanelVisible(!isPanelVisible);
-    };
-
     const handleExit = () => {
         if (user?.userId && roomId) {
             setIsPanelVisible(false);
@@ -328,6 +320,10 @@ const ChatRoomPage = () => {
         } else {
             alert('유효하지 않은 사용자 또는 채팅방 ID입니다.');
         }
+    };
+
+    const togglePanel = () => {
+        setIsPanelVisible(!isPanelVisible);
     };
 
     const handleSettingPress = () => {
@@ -370,65 +366,75 @@ const ChatRoomPage = () => {
                 ref={messagesContainerRef}
                 className="flex-1 overflow-y-auto p-4 flex flex-col"
             >
-            {filteredMessages.map((msg, index) => {
-                const currentDate = new Date(msg.time).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                });
+                {filteredMessages.map((msg, index) => {
+                    const currentDate = new Date(msg.time).toLocaleDateString('ko-KR', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                    });
 
-                const previousDate =
-                    index > 0
-                        ? new Date(filteredMessages[index - 1].time).toLocaleDateString('ko-KR', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                        })
-                        : null;
+                    const previousDate =
+                        index > 0
+                            ? new Date(filteredMessages[index - 1].time).toLocaleDateString('ko-KR', {
+                                  year: 'numeric',
+                                  month: 'long',
+                                  day: 'numeric',
+                              })
+                            : null;
 
-                const isNewDate = currentDate !== previousDate;
+                    const isNewDate = currentDate !== previousDate;
 
-                return (
-                    <React.Fragment key={msg.id || `message-${index}`}>
-                        {isNewDate && (
-                            <div className="flex items-center my-4">
-                                <div className="flex-grow border-t border-gray-300"></div>
-                                <span className="mx-4 text-gray-500 text-sm">{currentDate}</span>
-                                <div className="flex-grow border-t border-gray-300"></div>
-                            </div>
-                        )}
-                        <Chat
-                            profileImage={msg.profileImage}
-                            name={msg.name}
-                            message={msg.message}
-                            time={msg.time}
-                            isUserMessage={msg.isUserMessage}
-                            showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                            showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                            showTime={
-                                index === filteredMessages.length - 1 ||
-                                new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()
-                            }
-                        />
-                    </React.Fragment>
-                );
-            })}
+                    return (
+                        <React.Fragment key={msg.id || `message-${index}`}>
+                            {isNewDate && (
+                                <div className="flex items-center my-4">
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                    <span className="mx-4 text-gray-500 text-sm">{currentDate}</span>
+                                    <div className="flex-grow border-t border-gray-300"></div>
+                                </div>
+                            )}
+                            <Chat
+                                profileImage={msg.profileImage}
+                                name={msg.name}
+                                message={msg.message}
+                                time={msg.time}
+                                isUserMessage={msg.isUserMessage}
+                                showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                                showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                                showTime={
+                                    index === filteredMessages.length - 1 ||
+                                    new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()
+                                }
+                            />
+                        </React.Fragment>
+                    );
+                })}
                 <div ref={messagesEndRef} />
             </div>
             <ChatInput onSend={handleSend} />
             {isPanelVisible && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-end">
-                    <div className="bg-white w-3/4 h-full p-4 border-l border-gray-300">
+                <div
+                    className="fixed inset-0 bg-black bg-opacity-50 flex justify-end"
+                    onClick={() => setIsPanelVisible(false)} // 공백 클릭 시 Panel 닫기
+                >
+                    <div
+                        className="bg-white w-3/4 h-full p-4 border-l border-gray-300"
+                        onClick={(e) => e.stopPropagation()} // Panel 내부 클릭 시 닫히지 않음
+                    >
                         <div className="flex justify-between items-center mb-4">
                             <span className="text-lg font-bold">Participants</span>
                             <button onClick={togglePanel} className="p-2">
-                                <ExitIcon />
+                                <FontAwesomeIcon icon={faXmark} />
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto">
                             {participants.map((participant, index) => (
                                 <div key={index} className="flex items-center p-2">
-                                    <img src={participant.profileImage || ''} alt={participant.name} className="w-10 h-10 rounded-full" />
+                                    <img
+                                        src={participant.profileImage || ''}
+                                        alt={participant.name}
+                                        className="w-10 h-10 rounded-full"
+                                    />
                                     <span className="ml-2">{participant.name}</span>
                                 </div>
                             ))}
