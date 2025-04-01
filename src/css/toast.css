@@ -1,0 +1,29 @@
+.toast-container {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-message {
+    background-color: rgba(0, 0, 0, 0.85);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 16px;
+    font-size: 14px;
+    max-width: 80vw;
+    text-align: center;
+}
+
+.fade-in {
+    opacity: 1;
+    transform: translate(-50%, 0);
+}
+
+.fade-out {
+    opacity: 0;
+    transform: translate(-50%, -10px);
+}
