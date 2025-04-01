@@ -27,7 +27,17 @@ const AppRouter = () => {
     useEffect(() => {
         const storedUser = localStorage.getItem('user-storage');
         if (storedUser) {
-            setUser(JSON.parse(storedUser)); // 상태 복원
+            try {
+                const parsedUser = JSON.parse(storedUser);
+    
+                // 중첩된 상태를 복원
+                const user = parsedUser.state?.user?.state?.user || parsedUser.state?.user || parsedUser.user;
+                if (user) {
+                    setUser(user);
+                }
+            } catch (error) {
+                console.error('Failed to parse user-storage:', error);
+            }
         }
     }, [setUser]);
 
