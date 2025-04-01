@@ -47,7 +47,6 @@ const ChatRoomPage = () => {
 
     useEffect(() => {
         if (!roomId) {
-            // `roomId`가 없으면 채팅방 목록으로 리다이렉트
             navigate('/chatlist');
         }
     }, [roomId, navigate]);
@@ -59,7 +58,6 @@ const ChatRoomPage = () => {
                 try {
                     socket = getSocket();
                 } catch {
-                    console.warn('Socket not initialized. Retrying initialization...');
                     if (user?.userId) {
                         await initializeSocket(user.userId);
                         socket = getSocket();
@@ -68,26 +66,22 @@ const ChatRoomPage = () => {
 
                 if (socket) {
                     socket.emit('joinRoom', { roomId, userId: user?.userId });
-                } else {
-                    console.error('Socket is undefined. Unable to join room.');
                 }
 
-                socket?.on('newMessage', async (response: { messageId: string; roomId: string; userId?: string; context: string }) => {
-                    console.log('New message received from server:', response);
+                socket?.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string }) => {
+                    const isUserMessage = !response.user_id || response.user_id === user?.userId;
+                    let sender = participants.find((p) => p.userId === response.user_id);
 
-                    const isUserMessage = !response.userId || response.userId === user?.userId;
-                    let sender = participants.find((p) => p.userId === response.userId);
-
-                    if (!sender && response.userId) {
+                    if (!sender && response.user_id) {
                         try {
-                            const fetchedUser = await fetchUserById(response.userId);
+                            const fetchedUser = await fetchUserById(response.user_id);
                             sender = {
                                 userId: fetchedUser.userId,
                                 name: fetchedUser.name,
                                 profileImage: fetchedUser.file,
-                                id: fetchedUser.id, // 추가
-                                email: fetchedUser.email, // 추가
-                                file: fetchedUser.file, // 추가
+                                id: fetchedUser.id,
+                                email: fetchedUser.email,
+                                file: fetchedUser.file,
                             };
                         } catch (error) {
                             console.error('Error fetching user by ID:', error);
@@ -95,19 +89,18 @@ const ChatRoomPage = () => {
                     }
 
                     const newMessage: Message = {
-                        id: Number(response.messageId) || Date.now(),
+                        id: Number(response.message_id) || Date.now(),
                         profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
                         name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
                         message: response.context,
-                        time: new Date().toISOString(),
+                        time: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }), // 현재 시간 사용
                         isUserMessage,
-                        userId: response.userId || user?.userId || '',
+                        userId: response.user_id || user?.userId || '',
                     };
 
                     setMessages((prevMessages) => {
                         const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
                         if (isDuplicate) {
-                            console.log('Duplicate message detected, skipping:', newMessage);
                             return prevMessages;
                         }
 
@@ -182,9 +175,9 @@ const ChatRoomPage = () => {
             return {
                 ...user,
                 profileImage: user.file,
-                id: user.id, // 추가
-                email: user.email, // 추가
-                file: user.file, // 추가
+                id: user.id,
+                email: user.email,
+                file: user.file,
             };
         }));
         setParticipants(users);
@@ -194,38 +187,38 @@ const ChatRoomPage = () => {
         if (!roomId) throw new Error('Room ID is undefined');
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-    
+
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages(processedMessages.reverse()); // 최신 메시지가 아래로 오도록 순서 뒤집기
+            setMessages(processedMessages.reverse());
             setFilteredMessages(processedMessages.reverse());
             setNextCursor(fetchedNextCursor);
-            scrollToBottom(); // 초기 로드 시 맨 아래로 스크롤
+            scrollToBottom();
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
         }
     };
-    
+
     const fetchOlderMessages = async () => {
         if (!roomId || !nextCursor) return;
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, cursor: nextCursor, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-    
+
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-            setMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]); // 오래된 메시지를 위에 추가
+            setMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]);
             setFilteredMessages((prevMessages) => [...processedMessages.reverse(), ...prevMessages]);
             setNextCursor(fetchedNextCursor);
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
         }
     };
-    
+
     const processMessages = async (fetchedMessages: any[]): Promise<Message[]> => {
         return Promise.all(
             fetchedMessages.map(async (msg) => {
                 let sender = participants.find((p) => p.userId === msg.user_id);
-    
+
                 if (!sender && msg.user_id) {
                     try {
                         const fetchedUser = await fetchUserById(msg.user_id);
@@ -233,28 +226,28 @@ const ChatRoomPage = () => {
                             userId: fetchedUser.userId,
                             name: fetchedUser.name,
                             profileImage: fetchedUser.file,
-                            id: fetchedUser.id, // 추가
-                            email: fetchedUser.email, // 추가
-                            file: fetchedUser.file, // 추가
+                            id: fetchedUser.id,
+                            email: fetchedUser.email,
+                            file: fetchedUser.file,
                         };
                     } catch (error) {
                         console.error('Error fetching user by ID:', error);
                     }
                 }
-    
+
                 return {
                     id: msg.message_id || Date.now(),
                     profileImage: sender?.profileImage || null,
                     name: sender?.name || '알 수 없음',
                     message: msg.context || '',
-                    time: msg.timestamp || new Date().toISOString(),
+                    time: new Date().toLocaleString('ko-KR', { timeZone: 'Asia/Seoul' }), // 현재 시간 사용
                     isUserMessage: msg.user_id === user?.userId,
                     userId: msg.user_id || '',
                 };
             })
         );
     };
-    
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
