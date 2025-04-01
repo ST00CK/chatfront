@@ -1,5 +1,4 @@
-// const API_URL = `${import.meta.env.VITE_STOOCK_API_URL}/alert`;
-const API_URL = `http://localhost:8080`
+const API_URL = `${import.meta.env.VITE_STOOCK_API_URL}/alert`;
 
 export const initializeSSE = (userId: string, onReceiveMessage: (msg: string) => void) => {
     const sse = new EventSource(`${API_URL}/sse/subscribe?userId=${userId}`);
