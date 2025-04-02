@@ -33,8 +33,8 @@ const FriendListPage = () => {
     const friendSlideAnim = useRef(0);
     const [refreshFlag, setRefreshFlag] = useState(0);
     const { user } = useUserStore();
-    const [toastMessage, setToastMessage] = useState('');
-    const [showToast, setShowToast] = useState(false);
+    // const [toastMessage, setToastMessage] = useState('');
+    // const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
         if (!user?.userId) {
@@ -219,13 +219,13 @@ const FriendListPage = () => {
                     </div>
                 </div>
             )}
-            {showToast && (
-                <NotificationToast
-                    message={toastMessage}
-                    duration={10000}
-                    onClose={() => setShowToast(false)}
-                />
-            )}
+            {/*{showToast && (*/}
+            {/*    <NotificationToast*/}
+            {/*        message={toastMessage}*/}
+            {/*        duration={10000}*/}
+            {/*        onClose={() => setShowToast(false)}*/}
+            {/*    />*/}
+            {/*)}*/}
         </main>
     );
 };
