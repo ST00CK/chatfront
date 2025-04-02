@@ -45,18 +45,6 @@ const FriendListPage = () => {
             navigate('/');
             return;
         }
-
-        // Socket 및 SSE 초기화
-        initializeSocket(user.userId);
-        const sse = initializeSSE(user.userId, (msg: string) => {
-            setToastMessage(msg);
-            setShowToast(true);
-        });
-
-        // 컴포넌트 언마운트 시 SSE 닫기
-        return () => {
-            sse.close();
-        };
     }, [user, navigate]);
 
     useEffect(() => {

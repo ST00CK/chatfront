@@ -12,7 +12,6 @@ import ChatAddPage from './pages/chatAddPage';
 import MyPage from './pages/mypage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useUserStore } from './store/useUserStore';
-import { initializeSocket } from './utils/socket';
 import {useEffect, useRef} from 'react';
 import GlobalNotification from "./components/common/GlobalNotification";
 import {initializeSSE} from "./utils/sse";
