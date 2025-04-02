@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import '../../css/toast.css'; // 👈 CSS 따로 분리 (또는 styled-components도 가능)
+import '../../css/toast.css';
 
 interface ToastProps {
     message: string;

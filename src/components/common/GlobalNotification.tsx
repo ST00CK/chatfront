@@ -1,5 +1,5 @@
 import NotificationToast from "./notificationToast";
-import { useToastStore } from "../../store/useToastStore.tsx";
+import { useToastStore } from "../../store/useToastStore";
 
 const GlobalNotification = () => {
     const {message, visible, hideToast } = useToastStore();
