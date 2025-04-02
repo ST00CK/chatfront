@@ -56,7 +56,6 @@ export const fetchUserById = async (userId: string): Promise<User> => {
     const response = await axios.get(`${API_URL}/find/user`, {
         params: { userId }
     });
-    console.log('Fetched user:', response.data); // 사용자 정보를 콘솔에 출력하여 확인
     return response.data;
 };
 
@@ -95,7 +94,6 @@ export const useLogout = () => {
 export const useEmailSendMutation = (): UseMutationResult<{ message: string }, unknown, string> => {
     return useMutation({
         mutationFn: async (email: string) => {
-            console.log("Sending email:", email); // email 값 확인
             const response = await axios.post(`${API_URL}/send`, {
                 email: email
             }, {
@@ -113,7 +111,6 @@ export const useEmailSendMutation = (): UseMutationResult<{ message: string }, u
 export const useEmailCheckMutation = (): UseMutationResult<number, unknown, { email: string, authCode: string }> => {
     return useMutation({
         mutationFn: async ({ email, authCode }: { email: string, authCode: string }) => {
-            console.log("Verifying email and authCode:", email, authCode); // email과 authCode 값 확인
             const response = await axios.post(`${API_URL}/verify`, {
                 email: email,
                 authCode: authCode
@@ -123,7 +120,6 @@ export const useEmailCheckMutation = (): UseMutationResult<number, unknown, { em
                 },
                 withCredentials: true
             });
-            console.log("Response:",response.data);
             return response.status;
         }
     });
@@ -223,12 +219,9 @@ export const useKakaoLoginMutation = (): UseMutationResult<{ message: string }, 
           throw new Error("No access token received from Kakao");
         }
   
-        console.log("accessToken:", accessToken);
-        console.log("refreshToken:", refreshToken);
   
         window.Kakao.Auth.setAccessToken(accessToken, refreshToken);
         document.cookie = `refresh_token=${refreshToken}; path=/; SameSite=Strict`;
-        console.log("설정된 쿠키:", document.cookie);
   
         const response = await axios.post(
           `${API_URL}/api/kakao-token`,
@@ -240,7 +233,6 @@ export const useKakaoLoginMutation = (): UseMutationResult<{ message: string }, 
             withCredentials: true,
           }
         );
-        console.log("서버 응답:", response.data);
   
         return response.data;
       },

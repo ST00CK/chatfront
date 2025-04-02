@@ -19,12 +19,10 @@ const LoginPage = () => {
   useEffect(() => {
     if (window.Kakao && !window.Kakao.isInitialized()) {
       window.Kakao.init(import.meta.env.VITE_STOOCK_KAKAO_API_KEY);
-      console.log("Kakao SDK 초기화 완료:", window.Kakao.isInitialized());
     }
   }, []);
 
   const navigateToFriendList = () => {
-    console.log("Navigating to FriendListPage"); // 디버깅용 로그
     navigate('/friendlist');
   };
 
@@ -53,7 +51,6 @@ const LoginPage = () => {
   const handleKakaoLogin = async () => {
     try {
       await kakaoLoginMutation.mutateAsync(); // onSuccess에서 처리
-      console.log("Kakao login mutation completed."); // 디버깅용 로그
 
       // FriendListPage로 이동
       navigateToFriendList();
