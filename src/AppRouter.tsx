@@ -15,7 +15,7 @@ import { initializeSocket } from './utils/socket';
 import { useEffect } from 'react';
 import GlobalNotification from "./components/common/GlobalNotification";
 import {initializeSSE} from "./utils/sse";
-import {useToastStore} from "store/useToastStore";
+import {useToastStore} from "./store/useToastStore";
 
 const queryClient = new QueryClient();
 const persister = createSyncStoragePersister({
