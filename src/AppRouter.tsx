@@ -13,10 +13,7 @@ import MyPage from './pages/mypage';
 import NotFoundPage from './pages/NotFoundPage';
 import { useUserStore } from './store/useUserStore';
 import { initializeSocket } from './utils/socket';
-import {useEffect, useRef} from 'react';
-import GlobalNotification from "./components/common/GlobalNotification";
-import {initializeSSE} from "./utils/sse";
-import {useToastStore} from "./store/useToastStore";
+import { useEffect } from 'react';
 
 const queryClient = new QueryClient();
 const persister = createSyncStoragePersister({
@@ -25,10 +22,7 @@ const persister = createSyncStoragePersister({
 });
 
 const AppRouter = () => {
-
     const { user,setUser } = useUserStore();
-    const { showToast } = useToastStore();
-    const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user-storage');
@@ -48,24 +42,19 @@ const AppRouter = () => {
     }, [setUser]);
 
     useEffect(() => {
-        if (user?.userId) {
-            const sse = initializeSSE(user.userId, showToast);
-            sseRef.current = sse;
-            console.log('✅ SSE 연결 시도됨');
-
-            return () => {
-                if (sseRef.current) {
-                    sseRef.current.close();
+        const setupSocket = async () => {
+            if (user?.userId) {
+                try {
+                    await initializeSocket(user.userId);
+                } catch (error) {
+                    console.error('Failed to initialize socket:', error);
                 }
             }
-        } else {
-            if (sseRef.current) {
-                sseRef.current.close();
-                sseRef.current = null;
-            }
-        }
-    }, [user?.userId, showToast]);
-    
+        };
+
+        setupSocket();
+    }, [user?.userId]);
+
     return (
         <PersistQueryClientProvider client={queryClient} persistOptions={{
             persister,
@@ -86,7 +75,6 @@ const AppRouter = () => {
                     <Route path="*" element={<NotFoundPage />} /> {/* 404 페이지 */}
                 </Routes>
             </Router>
-            <GlobalNotification />
         </PersistQueryClientProvider>
     );
 };
