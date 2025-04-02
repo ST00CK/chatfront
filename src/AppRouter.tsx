@@ -12,7 +12,7 @@ import ChatAddPage from './pages/chatAddPage';
 import MyPage from './pages/mypage';
 import { useUserStore } from './store/useUserStore';
 import { initializeSocket } from './utils/socket';
-import { useEffect } from 'react';
+import {useEffect, useRef} from 'react';
 import GlobalNotification from "./components/common/GlobalNotification";
 import {initializeSSE} from "./utils/sse";
 import {useToastStore} from "./store/useToastStore";
@@ -25,17 +25,14 @@ const persister = createSyncStoragePersister({
 
 const AppRouter = () => {
     const { user } = useUserStore();
+    const { showToast } = useToastStore();
+    const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
         const setupSocket = async () => {
             if (user?.userId) {
                 try {
                     await initializeSocket(user.userId); // 소켓 연결 완료 대기
-
-                    initializeSSE(user.userId, (message) => {
-                        useToastStore.getState().showToast(message);
-                    });
-                    console.log('✅ SSE 연결 시도됨');
                 } catch (error) {
                     console.error('Failed to initialize socket:', error);
                 }
@@ -44,6 +41,25 @@ const AppRouter = () => {
 
         setupSocket();
     }, [user?.userId]);
+
+    useEffect(() => {
+        if (user?.userId) {
+            const sse = initializeSSE(user.userId, showToast);
+            sseRef.current = sse;
+            console.log('✅ SSE 연결 시도됨');
+
+            return () => {
+                if (sseRef.current) {
+                    sseRef.current.close();
+                }
+            }
+        } else {
+            if (sseRef.current) {
+                sseRef.current.close();
+                sseRef.current = null;
+            }
+        }
+    }, [user?.userId, showToast]);
     
     return (
         <PersistQueryClientProvider client={queryClient} persistOptions={{
