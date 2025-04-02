@@ -23,6 +23,7 @@ interface Message {
     time: string;
     isUserMessage: boolean;
     userId: string;
+    isSystemMessage?: boolean; // 시스템 메시지 여부
 }
 
 const ChatRoomPage = () => {
@@ -66,66 +67,105 @@ const ChatRoomPage = () => {
                         socket = getSocket();
                     }
                 }
-
+        
                 if (socket) {
+                    // 방 입장
                     socket.emit('joinRoom', { roomId, userId: user?.userId });
+        
+                    // 새로운 메시지 수신 처리
+                    socket.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string; send_at: string }) => {
+                        const isUserMessage = !response.user_id || response.user_id === user?.userId;
+                        let sender = participants.find((p) => p.userId === response.user_id);
+        
+                        if (!sender && response.user_id) {
+                            try {
+                                const fetchedUser = await fetchUserById(response.user_id);
+                                sender = {
+                                    userId: fetchedUser.userId,
+                                    name: fetchedUser.name,
+                                    profileImage: fetchedUser.file,
+                                    id: fetchedUser.id,
+                                    email: fetchedUser.email,
+                                    file: fetchedUser.file,
+                                };
+                            } catch (error) {
+                                console.error('Error fetching user by ID:', error);
+                            }
+                        }
+        
+                        const newMessage: Message = {
+                            id: Number(response.message_id) || Date.now(),
+                            profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
+                            name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
+                            message: response.context,
+                            time: response.send_at,
+                            isUserMessage,
+                            userId: response.user_id || user?.userId || '',
+                        };
+        
+                        setMessages((prevMessages) => {
+                            const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                            if (isDuplicate) {
+                                return prevMessages;
+                            }
+        
+                            const updatedMessages = [...prevMessages, newMessage];
+                            updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                            return updatedMessages;
+                        });
+        
+                        setFilteredMessages((prevMessages) => {
+                            const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
+                            if (isDuplicate) {
+                                return prevMessages;
+                            }
+        
+                            const updatedMessages = [...prevMessages, newMessage];
+                            updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+                            return updatedMessages;
+                        });
+        
+                        scrollToBottom();
+                    });
+        
+                    socket.on('userLeft', async ({ userId }) => {
+                        console.log('✅ userLeft event received:', userId);
+                    
+                        let leavingUser = participants.find((p) => p.userId === userId);
+                        if (!leavingUser) {
+                            try {
+                                const fetchedUser = await fetchUserById(userId);
+                                leavingUser = {
+                                    userId: fetchedUser.userId,
+                                    name: fetchedUser.name,
+                                    profileImage: fetchedUser.file,
+                                    id: fetchedUser.id,
+                                    email: fetchedUser.email,
+                                    file: fetchedUser.file,
+                                };
+                            } catch (error) {
+                                console.error('Error fetching user by ID:', error);
+                            }
+                        }
+                    
+                        const systemMessage: Message = {
+                            id: Date.now(),
+                            profileImage: null,
+                            name: '',
+                            message: `${leavingUser?.name || '알 수 없는 사용자'}님이 나가셨습니다.`,
+                            time: new Date().toISOString(),
+                            isUserMessage: false,
+                            userId,
+                            isSystemMessage: true,
+                        };
+                    
+                        setMessages((prevMessages) => [...prevMessages, systemMessage]);
+                        setFilteredMessages((prevMessages) => [...prevMessages, systemMessage]);
+                        scrollToBottom();
+                    });
                 }
-
-                socket?.on('newMessage', async (response: { message_id: string; room_id: string; user_id?: string; context: string; send_at: string }) => {
-                    const isUserMessage = !response.user_id || response.user_id === user?.userId;
-                    let sender = participants.find((p) => p.userId === response.user_id);
-
-                    if (!sender && response.user_id) {
-                        try {
-                            const fetchedUser = await fetchUserById(response.user_id);
-                            sender = {
-                                userId: fetchedUser.userId,
-                                name: fetchedUser.name,
-                                profileImage: fetchedUser.file,
-                                id: fetchedUser.id,
-                                email: fetchedUser.email,
-                                file: fetchedUser.file,
-                            };
-                        } catch (error) {
-                            console.error('Error fetching user by ID:', error);
-                        }
-                    }
-
-                    const newMessage: Message = {
-                        id: Number(response.message_id) || Date.now(),
-                        profileImage: isUserMessage ? user?.file || null : sender?.profileImage || null,
-                        name: isUserMessage ? user?.name || '나' : sender?.name || '알 수 없음',
-                        message: response.context,
-                        time: response.send_at,
-                        isUserMessage,
-                        userId: response.user_id || user?.userId || '',
-                    };
-
-                    setMessages((prevMessages) => {
-                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
-                        if (isDuplicate) {
-                            return prevMessages;
-                        }
-
-                        const updatedMessages = [...prevMessages, newMessage];
-                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-                        return updatedMessages;
-                    });
-
-                    setFilteredMessages((prevMessages) => {
-                        const isDuplicate = prevMessages.some((msg) => msg.id === newMessage.id && msg.message === newMessage.message);
-                        if (isDuplicate) {
-                            return prevMessages;
-                        }
-
-                        const updatedMessages = [...prevMessages, newMessage];
-                        updatedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-                        return updatedMessages;
-                    });
-
-                    scrollToBottom();
-                });
-
+        
+                // 채팅방 멤버 및 초기 로그 가져오기
                 await fetchChatRoomMembers();
                 await fetchInitialChatRoomLog();
             } catch (error) {
@@ -140,6 +180,7 @@ const ChatRoomPage = () => {
                 const socket = getSocket();
                 socket.emit('leaveRoom', { roomId });
                 socket.off('newMessage');
+                socket.off('userLeft');
             } catch (error) {
                 console.error('Error during socket cleanup:', error);
             }
@@ -191,16 +232,20 @@ const ChatRoomPage = () => {
         if (!roomId) throw new Error('Room ID is undefined');
         const response = await chatRoomLogMutation.mutateAsync({ room_Id: roomId, limit: 20 });
         const { messages: fetchedMessages, nextCursor: fetchedNextCursor } = response;
-
+    
         if (fetchedMessages && Array.isArray(fetchedMessages)) {
             const processedMessages = await processMessages(fetchedMessages);
-
-            processedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
-
-            setMessages(processedMessages);
-            setFilteredMessages(processedMessages);
+    
+            // 기존 메시지에 시스템 메시지 추가
+            const systemMessages = messages.filter((msg) => msg.isSystemMessage); // 기존 시스템 메시지 추출
+            const combinedMessages = [...processedMessages, ...systemMessages];
+    
+            combinedMessages.sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+    
+            setMessages(combinedMessages);
+            setFilteredMessages(combinedMessages);
             setNextCursor(fetchedNextCursor);
-
+    
             scrollToBottom();
         } else {
             console.error('Fetched messages are not in the expected format:', fetchedMessages);
@@ -386,6 +431,7 @@ const ChatRoomPage = () => {
 
                     return (
                         <React.Fragment key={msg.id || `message-${index}`}>
+                            {/* 날짜 구분선 */}
                             {isNewDate && (
                                 <div className="flex items-center my-4">
                                     <div className="flex-grow border-t border-gray-300"></div>
@@ -393,19 +439,28 @@ const ChatRoomPage = () => {
                                     <div className="flex-grow border-t border-gray-300"></div>
                                 </div>
                             )}
-                            <Chat
-                                profileImage={msg.profileImage}
-                                name={msg.name}
-                                message={msg.message}
-                                time={msg.time}
-                                isUserMessage={msg.isUserMessage}
-                                showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                                showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
-                                showTime={
-                                    index === filteredMessages.length - 1 ||
-                                    new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()
-                                }
-                            />
+            
+                            {/* 시스템 메시지 */}
+                            {msg.isSystemMessage ? (
+                                <div className="text-center text-gray-500 text-sm my-2">
+                                    {msg.message}
+                                </div>
+                            ) : (
+                                // 일반 메시지
+                                <Chat
+                                    profileImage={msg.profileImage}
+                                    name={msg.name}
+                                    message={msg.message}
+                                    time={msg.time}
+                                    isUserMessage={msg.isUserMessage}
+                                    showProfileImage={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                                    showName={index === 0 || filteredMessages[index - 1]?.userId !== msg.userId}
+                                    showTime={
+                                        index === filteredMessages.length - 1 ||
+                                        new Date(filteredMessages[index + 1]?.time).getMinutes() !== new Date(msg.time).getMinutes()
+                                    }
+                                />
+                            )}
                         </React.Fragment>
                     );
                 })}
