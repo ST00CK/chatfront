@@ -13,6 +13,7 @@ import MyPage from './pages/mypage';
 import { useUserStore } from './store/useUserStore';
 import { initializeSocket } from './utils/socket';
 import { useEffect } from 'react';
+import GlobalNotification from "./components/common/GlobalNotification";
 
 const queryClient = new QueryClient();
 const persister = createSyncStoragePersister({
@@ -56,6 +57,7 @@ const AppRouter = () => {
                     <Route path="/mypage" element={<MyPage />} />
                 </Routes>
             </Router>
+            <GlobalNotification />
         </PersistQueryClientProvider>
     );
 };

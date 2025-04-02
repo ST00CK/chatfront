@@ -5,13 +5,13 @@ import SearchIcon from '../components/common/searchIcon';
 import PlusIcon from '../components/common/plusIcon';
 import Setting from '../components/common/setting';
 import BottomTab from '../components/common/bottomTab';
-import NotificationToast from "../components/common/notificationToast";
+// import NotificationToast from "../components/common/notificationToast";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../store/useUserStore';
 import { useFriendShipCreateMutation, useFriendShipDeleteMutation, useFriendShipListMutation } from '../query/friendQuery';
 import { initializeSocket } from '../utils/socket';
-import { initializeSSE } from '../utils/sse';
+// import { initializeSSE } from '../utils/sse';
 
 interface Profile {
     id: string;
@@ -36,8 +36,8 @@ const FriendListPage = () => {
     const friendSlideAnim = useRef(0);
     const [refreshFlag, setRefreshFlag] = useState(0);
     const { user } = useUserStore();
-    const [toastMessage, setToastMessage] = useState('');
-    const [showToast, setShowToast] = useState(false);
+    // const [toastMessage, setToastMessage] = useState('');
+    // const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
         console.log('User information:', user);
@@ -45,12 +45,12 @@ const FriendListPage = () => {
         // Socket 초기화
         if (user?.userId) {
             initializeSocket(user.userId);
-            const sse = initializeSSE(user.userId, (msg: string) => {
-                setToastMessage(msg);
-                setShowToast(true);
-            });
-
-            return () => { sse.close(); };
+            // const sse = initializeSSE(user.userId, (msg: string) => {
+            //     setToastMessage(msg);
+            //     setShowToast(true);
+            // });
+            //
+            // return () => { sse.close(); };
         }
 
         const fetchFriendList = async () => {
@@ -226,13 +226,13 @@ const FriendListPage = () => {
                     </div>
                 </div>
             )}
-            {showToast && (
-                <NotificationToast
-                    message={toastMessage}
-                    duration={10000}
-                    onClose={() => setShowToast(false)}
-                />
-            )}
+            {/*{showToast && (*/}
+            {/*    <NotificationToast*/}
+            {/*        message={toastMessage}*/}
+            {/*        duration={10000}*/}
+            {/*        onClose={() => setShowToast(false)}*/}
+            {/*    />*/}
+            {/*)}*/}
         </main>
     );
 };
