@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { HashRouter as Router, Route, Routes } from 'react-router-dom';
 import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persister';
@@ -10,6 +10,7 @@ import ChatRoomPage from './pages/chatRoomPage';
 import ChatListPage from './pages/chatListPage';
 import ChatAddPage from './pages/chatAddPage';
 import MyPage from './pages/mypage';
+import NotFoundPage from './pages/NotFoundPage';
 import { useUserStore } from './store/useUserStore';
 import { initializeSocket } from './utils/socket';
 import {useEffect, useRef} from 'react';
@@ -24,23 +25,27 @@ const persister = createSyncStoragePersister({
 });
 
 const AppRouter = () => {
-    const { user } = useUserStore();
+
+    const { user,setUser } = useUserStore();
     const { showToast } = useToastStore();
     const sseRef = useRef<EventSource | null>(null);
 
     useEffect(() => {
-        const setupSocket = async () => {
-            if (user?.userId) {
-                try {
-                    await initializeSocket(user.userId); // 소켓 연결 완료 대기
-                } catch (error) {
-                    console.error('Failed to initialize socket:', error);
+        const storedUser = localStorage.getItem('user-storage');
+        if (storedUser) {
+            try {
+                const parsedUser = JSON.parse(storedUser);
+    
+                // 중첩된 상태를 복원
+                const user = parsedUser.state?.user?.state?.user || parsedUser.state?.user || parsedUser.user;
+                if (user) {
+                    setUser(user);
                 }
+            } catch (error) {
+                console.error('Failed to parse user-storage:', error);
             }
-        };
-
-        setupSocket();
-    }, [user?.userId]);
+        }
+    }, [setUser]);
 
     useEffect(() => {
         if (user?.userId) {
@@ -73,11 +78,12 @@ const AppRouter = () => {
                     <Route path="/" element={<LoginPage />} />
                     <Route path="/signup" element={<SignUpPage />} />
                     <Route path="/passwdchange" element={<PasswdChangePage />} />
-                    <Route path="/friendlist" element={<FriendListPage />} /> 
+                    <Route path="/friendlist" element={<FriendListPage />} />
                     <Route path="/chatroom" element={<ChatRoomPage />} />
                     <Route path="/chatlist" element={<ChatListPage />} />
                     <Route path="/chataddpage" element={<ChatAddPage />} />
                     <Route path="/mypage" element={<MyPage />} />
+                    <Route path="*" element={<NotFoundPage />} /> {/* 404 페이지 */}
                 </Routes>
             </Router>
             <GlobalNotification />

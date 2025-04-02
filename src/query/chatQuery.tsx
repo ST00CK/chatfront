@@ -21,7 +21,6 @@ function transformRoomData(room: { room_id: string; room_name: string }): Room {
 export const useChatRoomListMutation = (): UseMutationResult<Room[], unknown, { userId: string} , unknown> =>{
     return useMutation({
         mutationFn: async({ userId }) =>{
-            console.log(userId);
             const response = await axios.get(`${API_URL}/api/chatroom/list`, {
                 params: { userId }
             })
@@ -52,7 +51,6 @@ export const useChatRoomMembersMutation = (): UseMutationResult<RoomMembersRespo
             const response = await axios.get(`${API_URL}/api/chatroom/members`, {
                 params: { roomId },
             });
-            console.log('API response:', response.data); // API 응답을 콘솔에 출력하여 확인
             const userIds = response.data.map((member: { user_id: string }) => member.user_id);
             return { userId: userIds };
         },
@@ -80,7 +78,6 @@ interface CreateRoomResponse {
 export const useChatRoomCreateMutation = (): UseMutationResult<CreateRoomResponse, unknown, CreateChatRoom , unknown> =>{
     return useMutation({
         mutationFn: async(createRoomData: CreateChatRoom) =>{
-            console.log(createRoomData);
             const response = await axios.post(`${API_URL}/api/chatroom/create`,
                 createRoomData
             ,{
@@ -198,7 +195,6 @@ interface ChatLogRequest {
 export const useChatRoomLogMutation = (): UseMutationResult<ChatLogResponse, unknown, ChatLogRequest, unknown> => {
     return useMutation({
         mutationFn: async ({ room_Id, cursor, limit }) => {
-            console.log(`Fetching chat log for roomId: ${room_Id}, cursor: ${cursor}, limit: ${limit}`);
             const response = await axios.get(`${API_URL}/api/chatroom/log`, {
                 params: { roomId: room_Id, cursor, limit },
             });

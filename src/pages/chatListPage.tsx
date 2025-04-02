@@ -38,12 +38,10 @@ const ChatListPage = () => {
         
             try {
                 const response = await chatRoomListMutation.mutateAsync({ userId: user.userId });
-                console.log('Chat list response:', response); // 전체 응답 데이터 확인
         
                 // 각 채팅방의 로그를 조회하여 마지막 메시지를 가져옴
                 const updatedMessages = await Promise.all(
                     response.map(async (room: Room) => {
-                        console.log('Processing room:', room); // 각 채팅방 데이터 확인
         
                         const roomMembers = room.name.split(',').filter((name: string) => name !== user.name);
                         const roomName = roomMembers.join(',');
@@ -60,9 +58,7 @@ const ChatListPage = () => {
                         // 필드 이름 매핑
                         const lastMessage = messages[0]?.context || '대화가 없습니다.';
                         const lastMessageTime = messages[0]?.send_at || '';
-        
-                        console.log(`Room: ${roomName}, Last Message: ${lastMessage}, Time: ${lastMessageTime}`); // 마지막 메시지와 시간 확인
-        
+                
                         return {
                             id: room.id,
                             name: roomName,

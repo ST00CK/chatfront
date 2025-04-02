@@ -28,7 +28,6 @@ const ChatAddPage = () => {
         const fetchFriendList = async () => {
             try {
                 const response = await friendShipListMutation.mutateAsync(user!.userId);
-                console.log('Friend list response:', response); // 응답 데이터 확인
                 if (Array.isArray(response)) {
                     const transformedResponse = response.map((user: { id: string; name: string; imageUrl: string }) => ({
                         id: user.id,
@@ -65,8 +64,6 @@ const ChatAddPage = () => {
                 profile.id === id.toString() ? { ...profile, isChecked: !profile.isChecked } : profile
             );
     
-            console.log('Updated Profiles:', updatedProfiles); // 디버깅용 로그
-    
             // 필터링된 프로필도 업데이트된 상태를 기반으로 설정
             setFilteredProfiles(updatedProfiles.filter(profile =>
                 profile.name.toLowerCase().includes(inputValue.toLowerCase())
@@ -78,7 +75,6 @@ const ChatAddPage = () => {
 
     const handleCreateChatRoom = async () => {
     const selectedProfiles = profiles.filter(profile => profile.isChecked);
-    console.log('Selected profiles:', selectedProfiles); // 선택된 유저 확인
     if (selectedProfiles.length === 0) {
         alert('선택된 유저가 없습니다.');
         return;

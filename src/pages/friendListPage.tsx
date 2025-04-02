@@ -40,25 +40,33 @@ const FriendListPage = () => {
     // const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
-        console.log('User information:', user);
-
-        // Socket 초기화
-        if (user?.userId) {
-            initializeSocket(user.userId);
-            // const sse = initializeSSE(user.userId, (msg: string) => {
-            //     setToastMessage(msg);
-            //     setShowToast(true);
-            // });
-            //
-            // return () => { sse.close(); };
+        if (!user?.userId) {
+            console.warn('User is not logged in. Redirecting to login page.');
+            navigate('/');
+            return;
         }
 
+        // Socket 및 SSE 초기화
+        initializeSocket(user.userId);
+        const sse = initializeSSE(user.userId, (msg: string) => {
+            setToastMessage(msg);
+            setShowToast(true);
+        });
+
+        // 컴포넌트 언마운트 시 SSE 닫기
+        return () => {
+            sse.close();
+        };
+    }, [user, navigate]);
+
+    useEffect(() => {
         const fetchFriendList = async () => {
             try {
                 const response = await friendShipListMutation.mutateAsync(user!.userId);
-                console.log('Friend list response:', response);
 
                 if (response === "친구 없음") {
+                    setProfiles([]);
+                    setFilteredProfiles([]);
                     return;
                 }
 
@@ -69,14 +77,14 @@ const FriendListPage = () => {
                     }));
                     setProfiles(transformedResponse);
                     setFilteredProfiles(transformedResponse);
-                    console.log('Profiles updated:', transformedResponse);
                 } else {
-                    console.error('Unexpected response format:', response);
+                    console.error('Unexpected response format:', response); // 예상치 못한 응답 형식 확인
                 }
             } catch (error) {
-                console.error('Error fetching friend list:', error);
+                console.error('Error fetching friend list:', error); // 에러 로그 출력
             }
         };
+
         fetchFriendList();
     }, [user, refreshFlag]);
 
