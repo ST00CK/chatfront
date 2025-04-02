@@ -14,6 +14,8 @@ import { useUserStore } from './store/useUserStore';
 import { initializeSocket } from './utils/socket';
 import { useEffect } from 'react';
 import GlobalNotification from "./components/common/GlobalNotification";
+import {initializeSSE} from "./utils/sse";
+import {useToastStore} from "store/useToastStore";
 
 const queryClient = new QueryClient();
 const persister = createSyncStoragePersister({
@@ -29,6 +31,11 @@ const AppRouter = () => {
             if (user?.userId) {
                 try {
                     await initializeSocket(user.userId); // 소켓 연결 완료 대기
+                    const sse = initializeSSE(user.userId, (message) => {
+                        useToastStore.getState().showToast(message);
+                    });
+
+                    return () => { sse.close() };
                 } catch (error) {
                     console.error('Failed to initialize socket:', error);
                 }
