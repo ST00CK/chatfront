@@ -4,7 +4,7 @@ export const initializeSSE = (userId: string, onReceiveMessage: (msg: string) =>
     const sse = new EventSource(`${API_URL}/sse/subscribe?userId=${userId}`);
 
     sse.onopen = () => {
-        console.log('SSE opened successfully');
+        console.log('✅ SSE opened successfully');
     }
 
     sse.addEventListener("chat-alert", (event) => {

@@ -31,11 +31,11 @@ const AppRouter = () => {
             if (user?.userId) {
                 try {
                     await initializeSocket(user.userId); // 소켓 연결 완료 대기
-                    const sse = initializeSSE(user.userId, (message) => {
+
+                    initializeSSE(user.userId, (message) => {
                         useToastStore.getState().showToast(message);
                     });
-
-                    return () => { sse.close() };
+                    console.log('✅ SSE 연결 시도됨');
                 } catch (error) {
                     console.error('Failed to initialize socket:', error);
                 }
