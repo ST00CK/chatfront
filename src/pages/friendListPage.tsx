@@ -5,13 +5,10 @@ import SearchIcon from '../components/common/searchIcon';
 import PlusIcon from '../components/common/plusIcon';
 import Setting from '../components/common/setting';
 import BottomTab from '../components/common/bottomTab';
-import NotificationToast from "../components/common/notificationToast";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisV, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { useUserStore } from '../store/useUserStore';
 import { useFriendShipCreateMutation, useFriendShipDeleteMutation, useFriendShipListMutation } from '../query/friendQuery';
-import { initializeSocket } from '../utils/socket';
-import { initializeSSE } from '../utils/sse';
 
 interface Profile {
     id: string;
@@ -45,18 +42,6 @@ const FriendListPage = () => {
             navigate('/');
             return;
         }
-
-        // Socket 및 SSE 초기화
-        initializeSocket(user.userId);
-        const sse = initializeSSE(user.userId, (msg: string) => {
-            setToastMessage(msg);
-            setShowToast(true);
-        });
-
-        // 컴포넌트 언마운트 시 SSE 닫기
-        return () => {
-            sse.close();
-        };
     }, [user, navigate]);
 
     useEffect(() => {
