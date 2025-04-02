@@ -20,6 +20,7 @@
     "@tanstack/react-query": "^5.67.1",
     "@tanstack/react-query-persist-client": "^5.67.1",
     "axios": "^1.8.1",
+    "lucide-react": "^0.487.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.2.0",

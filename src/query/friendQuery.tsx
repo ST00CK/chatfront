@@ -54,16 +54,13 @@ export const useFriendShipListMutation = (): UseMutationResult<TransformedUser[]
             return "친구 없음"  
         }
         
-        console.log(response.data);
         // response.data가 배열인지 확인하고, 배열이 아니면 배열로 감싸기
         const originalData: ServerUserData[] = Array.isArray(response.data)
         ? response.data
         : [response.data];
 
-        console.log("ori: " + JSON.stringify(originalData));
 
         const transformedData: TransformedUser[] = await Promise.all(originalData.map(transformUser));
-        console.log(transformedData);
         return transformedData;
         },
         onSuccess(data){

@@ -40,8 +40,6 @@ const FriendListPage = () => {
     const [showToast, setShowToast] = useState(false);
 
     useEffect(() => {
-        console.log('User information:', user); // 현재 사용자 정보 확인
-
         if (!user?.userId) {
             console.warn('User is not logged in. Redirecting to login page.');
             navigate('/');
@@ -64,13 +62,9 @@ const FriendListPage = () => {
     useEffect(() => {
         const fetchFriendList = async () => {
             try {
-                console.log('Fetching friend list for userId:', user?.userId); // 요청 전 userId 확인
-
                 const response = await friendShipListMutation.mutateAsync(user!.userId);
-                console.log('Friend list response:', response); // 서버 응답 확인
 
                 if (response === "친구 없음") {
-                    console.log('No friends found.'); // 친구 없음 메시지 확인
                     setProfiles([]);
                     setFilteredProfiles([]);
                     return;
@@ -81,7 +75,6 @@ const FriendListPage = () => {
                         ...user,
                         id: user.id.toString(),
                     }));
-                    console.log('Transformed friend list:', transformedResponse); // 변환된 친구 목록 확인
                     setProfiles(transformedResponse);
                     setFilteredProfiles(transformedResponse);
                 } else {
